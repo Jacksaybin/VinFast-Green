@@ -9,6 +9,7 @@ import { walletService } from '../services/walletService';
 import { investmentService } from '../services/investmentService';
 import { notificationService } from '../services/notificationService';
 import { newsService } from '../services/newsService';
+import { chatService } from '../services/chatService';
 import { requireAdmin, AuthRequest } from '../middleware/auth';
 import { ok, badRequest, paginated } from '../utils/response';
 
@@ -121,6 +122,38 @@ router.delete('/news/:id', requireAdmin, async (req: AuthRequest, res: Response)
   const result = await newsService.deleteNews(req.params.id);
   if (!result) return badRequest(res, 'Xóa bài viết thất bại');
   return ok(res, null, 'Xóa bài viết thành công');
+});
+
+// =============================================
+// CHAT SUPPORT MANAGEMENT
+// =============================================
+
+router.get('/chat/conversations', requireAdmin, async (req: AuthRequest, res: Response) => {
+  const result = await chatService.adminListConversations();
+  return ok(res, result);
+});
+
+router.get('/chat/conversations/:id/messages', requireAdmin, async (req: AuthRequest, res: Response) => {
+  const result = await chatService.adminGetMessages(req.params.id);
+  if (!result.success) return badRequest(res, result.error!);
+  return ok(res, result);
+});
+
+router.post(
+  '/chat/conversations/:id/reply',
+  requireAdmin,
+  [body('text').trim().notEmpty().withMessage('Tin nhắn không được trống')],
+  async (req: AuthRequest, res: Response) => {
+    const result = await chatService.adminReply(req.params.id, req.body.text);
+    if (!result.success) return badRequest(res, result.error!);
+    return ok(res, result.message, 'Đã gửi trả lời');
+  }
+);
+
+router.post('/chat/conversations/:id/close', requireAdmin, async (req: AuthRequest, res: Response) => {
+  const result = await chatService.adminCloseConversation(req.params.id);
+  if (!result) return badRequest(res, 'Đóng hội thoại thất bại');
+  return ok(res, null, 'Đã đóng hội thoại');
 });
 
 export default router;

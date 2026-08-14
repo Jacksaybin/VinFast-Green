@@ -184,6 +184,34 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 );
 
 -- =============================================
+-- CHAT CONVERSATIONS TABLE
+-- =============================================
+CREATE TABLE IF NOT EXISTS chat_conversations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_ref VARCHAR(64) UNIQUE NOT NULL,
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  user_name VARCHAR(255) DEFAULT '',
+  status VARCHAR(20) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
+  last_message TEXT,
+  last_message_at TIMESTAMPTZ,
+  unread_count INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- =============================================
+-- CHAT MESSAGES TABLE
+-- =============================================
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  conversation_id UUID NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+  sender VARCHAR(20) NOT NULL CHECK (sender IN ('user', 'admin')),
+  text TEXT NOT NULL,
+  is_read BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- =============================================
 -- INDEXES
 -- =============================================
 CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
@@ -204,6 +232,10 @@ CREATE INDEX IF NOT EXISTS idx_news_category ON news(category);
 CREATE INDEX IF NOT EXISTS idx_news_is_featured ON news(is_featured);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_hash ON refresh_tokens(token_hash);
+CREATE INDEX IF NOT EXISTS idx_chat_conversations_user_id ON chat_conversations(user_id);
+CREATE INDEX IF NOT EXISTS idx_chat_conversations_updated_at ON chat_conversations(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation_id ON chat_messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_created_at ON chat_messages(created_at);
 
 -- =============================================
 -- FUNCTIONS

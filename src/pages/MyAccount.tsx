@@ -1,11 +1,12 @@
 /**
  * Trang tài khoản người dùng - Dashboard đầy đủ với stats, biểu đồ, và danh sách đầu tư
+ * Kết nối backend API + fallback localStorage
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ArrowLeft, Wallet, TrendingUp, Clock, BarChart3, ChevronRight,
-  Plus, PiggyBank, Gift, Eye, ArrowUpRight, ArrowDownRight
+  Plus, PiggyBank, Gift, Eye, ArrowUpRight, ArrowDownRight, RefreshCw
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '../stores/authStore';
@@ -20,15 +21,22 @@ const MyAccount: React.FC = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const { balance, lockedBalance } = useWalletStore();
-  const { getUserInvestments, getActiveInvestments, getTotalInvested, getTotalProfit } = useInvestmentStore();
+  const { balance, lockedBalance, refresh: refreshWallet } = useWalletStore();
+  const { investments, refresh: refreshInvestments, getUserInvestments, getActiveInvestments, getTotalInvested, getTotalProfit } = useInvestmentStore();
   const { seedWelcomeNotifications, getUserNotifications, markAsRead } = useNotificationStore();
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (user) {
       seedWelcomeNotifications(user.id);
     }
   }, [user?.id]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([refreshWallet(), refreshInvestments()]);
+    setRefreshing(false);
+  };
 
   if (!user) return null;
 
@@ -114,14 +122,24 @@ const MyAccount: React.FC = () => {
       <Header />
 
       <div className="px-4 pb-24">
-        {/* Back button */}
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mt-4 mb-2"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Quay lại</span>
-        </button>
+        {/* Back button + refresh */}
+        <div className="flex items-center justify-between mt-4 mb-2">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Quay lại</span>
+          </button>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="p-2 text-gray-500 hover:text-green-600 disabled:opacity-50"
+            title="Làm mới"
+          >
+            <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
 
         {/* User greeting */}
         <div className="flex items-center justify-between mb-4">

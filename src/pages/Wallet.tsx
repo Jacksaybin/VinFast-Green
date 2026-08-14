@@ -1,9 +1,10 @@
 /**
  * Trang quản lý ví - nạp/rút tiền
+ * Kết nối backend API + fallback localStorage
  */
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Wallet, ArrowDownCircle, ArrowUpCircle, Lock } from 'lucide-react';
+import { ArrowLeft, Wallet, ArrowDownCircle, ArrowUpCircle, Lock, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import Header from '../components/Header';
 import BottomNavigation from '../components/BottomNavigation';
@@ -16,7 +17,7 @@ import { formatCurrency } from '../lib/format';
 const WalletPage: React.FC = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user)!;
-  const { balance, lockedBalance, deposit, requestWithdraw, initDemoBalance } = useWalletStore();
+  const { balance, lockedBalance, requestDeposit, requestWithdraw, refresh } = useWalletStore();
   const totalInvested = useInvestmentStore((s) => s.getTotalInvested(user.id));
   const addNotification = useNotificationStore((s) => s.addNotification);
 
@@ -25,10 +26,22 @@ const WalletPage: React.FC = () => {
   const [note, setNote] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    initDemoBalance(user.id);
-  }, [user.id, initDemoBalance]);
+    const load = async () => {
+      setRefreshing(true);
+      await refresh();
+      setRefreshing(false);
+    };
+    load();
+  }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +49,6 @@ const WalletPage: React.FC = () => {
     setLoading(true);
 
     const numAmount = parseFloat(amount.replace(/\D/g, ''));
-    await new Promise((r) => setTimeout(r, 600));
 
     if (isNaN(numAmount) || numAmount <= 0) {
       setMessage({ type: 'error', text: 'Vui lòng nhập số tiền hợp lệ' });
@@ -45,30 +57,33 @@ const WalletPage: React.FC = () => {
     }
 
     if (tab === 'deposit') {
-      const tx = deposit(user.id, numAmount, note || 'Yêu cầu nạp tiền qua chuyển khoản');
-      addNotification({
-        userId: user.id,
-        title: 'Yêu cầu nạp tiền đã gửi',
-        message: `Giao dịch ${tx.reference} đang chờ admin duyệt.`,
-        type: 'transaction',
-        link: '/transactions',
-      });
-      setMessage({ type: 'success', text: 'Yêu cầu nạp tiền đã được gửi. Vui lòng chờ admin duyệt.' });
-    } else {
-      const result = requestWithdraw(user.id, numAmount, note || 'Yêu cầu rút tiền');
-      if (!result.success) {
+      const result = await requestDeposit(user.id, numAmount, note || 'Yêu cầu nạp tiền qua chuyển khoản');
+      if (result.success) {
+        addNotification({
+          userId: user.id,
+          title: 'Yêu cầu nạp tiền đã gửi',
+          message: `Giao dịch ${result.transaction?.reference} đang chờ admin duyệt.`,
+          type: 'transaction',
+          link: '/transactions',
+        });
+        setMessage({ type: 'success', text: 'Yêu cầu nạp tiền đã được gửi. Vui lòng chờ admin duyệt.' });
+      } else {
         setMessage({ type: 'error', text: result.error! });
-        setLoading(false);
-        return;
       }
-      addNotification({
-        userId: user.id,
-        title: 'Yêu cầu rút tiền đã gửi',
-        message: `Giao dịch ${result.transaction!.reference} đang được xử lý.`,
-        type: 'transaction',
-        link: '/transactions',
-      });
-      setMessage({ type: 'success', text: 'Yêu cầu rút tiền đã được gửi thành công.' });
+    } else {
+      const result = await requestWithdraw(user.id, numAmount, note || 'Yêu cầu rút tiền');
+      if (result.success) {
+        addNotification({
+          userId: user.id,
+          title: 'Yêu cầu rút tiền đã gửi',
+          message: `Giao dịch ${result.transaction?.reference} đang được xử lý.`,
+          type: 'transaction',
+          link: '/transactions',
+        });
+        setMessage({ type: 'success', text: 'Yêu cầu rút tiền đã được gửi thành công.' });
+      } else {
+        setMessage({ type: 'error', text: result.error! });
+      }
     }
 
     setAmount('');
@@ -81,13 +96,23 @@ const WalletPage: React.FC = () => {
       <Header />
 
       <div className="px-4 py-4">
-        <button
-          onClick={() => navigate('/my-account')}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Quay lại tài khoản</span>
-        </button>
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => navigate('/my-account')}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Quay lại tài khoản</span>
+          </button>
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="p-2 text-gray-500 hover:text-green-600 disabled:opacity-50"
+            title="Làm mới"
+          >
+            <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
 
         <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-2xl p-6 text-white mb-6">
           <div className="flex items-center gap-2 mb-4">
@@ -112,7 +137,7 @@ const WalletPage: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <div className="flex border-b border-gray-100">
             <button
-              onClick={() => setTab('deposit')}
+              onClick={() => { setTab('deposit'); setMessage(null); }}
               className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${
                 tab === 'deposit' ? 'text-green-600 border-b-2 border-green-600' : 'text-gray-500'
               }`}
@@ -121,7 +146,7 @@ const WalletPage: React.FC = () => {
               Nạp tiền
             </button>
             <button
-              onClick={() => setTab('withdraw')}
+              onClick={() => { setTab('withdraw'); setMessage(null); }}
               className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${
                 tab === 'withdraw' ? 'text-green-600 border-b-2 border-green-600' : 'text-gray-500'
               }`}
@@ -145,6 +170,7 @@ const WalletPage: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-1">Số tiền (VND)</label>
               <input
                 type="text"
+                inputMode="numeric"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder={tab === 'deposit' ? 'Tối thiểu 100.000' : 'Tối thiểu 100.000'}

@@ -16,6 +16,7 @@ import investmentRouter from './routes/investments';
 import adminRouter from './routes/admin';
 import notificationRouter from './routes/notifications';
 import newsRouter from './routes/news';
+import chatRouter from './routes/chat';
 import { testConnection, query, queryOne } from './db';
 
 const app = express();
@@ -45,6 +46,7 @@ app.use('/api/investments', investmentRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/news', newsRouter);
+app.use('/api/chat', chatRouter);
 
 // Create admin account if not exists
 async function seedAdmin() {

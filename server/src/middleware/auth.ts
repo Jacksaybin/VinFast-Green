@@ -72,3 +72,20 @@ export function requireAdmin(req: AuthRequest, res: Response, next: NextFunction
 
   next();
 }
+
+/**
+ * Accepts requests with or without a valid Bearer token.
+ * Attaches req.user when a valid token is present, never rejects.
+ */
+export function optionalAuth(req: AuthRequest, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+
+  if (authHeader?.startsWith('Bearer ')) {
+    const payload = verifyAccessToken(authHeader.slice(7));
+    if (payload) {
+      req.user = payload;
+    }
+  }
+
+  next();
+}
