@@ -80,3 +80,4 @@ const SecurityShield: React.FC<Props> = ({ className }) => (
 );
 
 export default SecurityShield;
+export { SecurityShield };

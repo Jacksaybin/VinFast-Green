@@ -71,3 +71,4 @@ const WelcomeOnboarding: React.FC<Props> = ({ className }) => (
 );
 
 export default WelcomeOnboarding;
+export { WelcomeOnboarding };

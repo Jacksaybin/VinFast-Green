@@ -1,9 +1,11 @@
-export { ChargingStationHero } from './ChargingStationHero'
-export { EmptyWallet } from './EmptyWallet'
-export { EmptyInvestments } from './EmptyInvestments'
-export { SuccessInvestment } from './SuccessInvestment'
-export { NoNotifications } from './NoNotifications'
-export { SecurityShield } from './SecurityShield'
-export { WelcomeOnboarding } from './WelcomeOnboarding'
-export { EnergyDashboard } from './EnergyDashboard'
-export { EVNetworkMap } from './EVNetworkMap'
+export { ChargingStationHero } from './ChargingStationHero';
+export { EmptyWallet } from './EmptyWallet';
+export { EmptyInvestments } from './EmptyInvestments';
+export { SuccessInvestment } from './SuccessInvestment';
+export { NoNotifications } from './NoNotifications';
+export { SecurityShield } from './SecurityShield';
+export { WelcomeOnboarding } from './WelcomeOnboarding';
+export { EnergyDashboard } from './EnergyDashboard';
+export { EVNetworkMap } from './EVNetworkMap';
+export { default as Illustration } from './Illustration';
+export type { IllustrationName, IllustrationProps } from './Illustration';

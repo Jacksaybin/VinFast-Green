@@ -19,7 +19,7 @@ const REFERRAL_MILESTONE_BONUS = 50000; // 50,000 VND per milestone
 // GET /api/referrals/stats - Get referral statistics for current user
 router.get('/stats', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.userId;
 
     // Get referral count
     const referralCountResult = await queryOne<{ count: string }>(
@@ -91,7 +91,7 @@ router.get('/stats', authMiddleware, async (req: Request, res: Response) => {
 // GET /api/referrals/bonuses - Get bonus history
 router.get('/bonuses', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.userId;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const offset = (page - 1) * limit;
@@ -126,7 +126,7 @@ router.get('/bonuses', authMiddleware, async (req: Request, res: Response) => {
 // POST /api/referrals/claim-bonus/:id - Claim a pending bonus
 router.post('/claim-bonus/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.userId;
     const bonusId = req.params.id;
 
     // Get the bonus
@@ -184,7 +184,7 @@ router.post('/claim-bonus/:id', authMiddleware, async (req: Request, res: Respon
 // GET /api/referrals/referred-users - Get list of referred users
 router.get('/referred-users', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.userId;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const offset = (page - 1) * limit;
@@ -225,7 +225,7 @@ router.get('/referred-users', authMiddleware, async (req: Request, res: Response
 // POST /api/referrals/validate-code - Validate a referral code
 router.post('/validate-code', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.userId;
     const { code } = req.body;
 
     if (!code) {

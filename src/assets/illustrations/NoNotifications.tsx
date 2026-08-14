@@ -41,3 +41,4 @@ const NoNotifications: React.FC<Props> = ({ className }) => (
 );
 
 export default NoNotifications;
+export { NoNotifications };

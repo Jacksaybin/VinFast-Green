@@ -43,3 +43,4 @@ const EmptyInvestments: React.FC<Props> = ({ className }) => (
 );
 
 export default EmptyInvestments;
+export { EmptyInvestments };

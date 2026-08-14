@@ -54,3 +54,4 @@ const SuccessInvestment: React.FC<Props> = ({ className }) => (
 );
 
 export default SuccessInvestment;
+export { SuccessInvestment };

@@ -12,7 +12,7 @@ const router = Router();
 // GET /api/reinvestments/my-investments - Get user's active investments eligible for reinvestment
 router.get('/my-investments', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.userId;
 
     const investments = await query<any>(
       `SELECT i.*, p.name as package_name, p.type as package_type, p.image_url,
@@ -52,7 +52,7 @@ router.get('/my-investments', authMiddleware, async (req: Request, res: Response
 // GET /api/reinvestments/options/:investmentId - Get reinvestment options for an investment
 router.get('/options/:investmentId', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.userId;
     const investmentId = req.params.investmentId;
 
     // Get the investment
@@ -94,7 +94,7 @@ router.get('/options/:investmentId', authMiddleware, async (req: Request, res: R
 // POST /api/reinvestments/preview - Preview reinvestment calculation
 router.post('/preview', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.userId;
     const { investmentId, packageId, profitToUse, cashToAdd } = req.body;
 
     if (!investmentId || !packageId) {
@@ -185,7 +185,7 @@ router.post('/preview', authMiddleware, async (req: Request, res: Response) => {
 // POST /api/reinvestments/execute - Execute reinvestment
 router.post('/execute', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.userId;
     const { investmentId, packageId, profitToUse, cashToAdd } = req.body;
 
     if (!investmentId || !packageId) {
@@ -381,7 +381,7 @@ router.post('/execute', authMiddleware, async (req: Request, res: Response) => {
 // GET /api/reinvestments/history - Get reinvestment history
 router.get('/history', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = (req as any).user?.userId;
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const offset = (page - 1) * limit;

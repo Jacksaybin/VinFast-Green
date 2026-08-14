@@ -12,7 +12,7 @@ const router = Router();
 router.use(requireAdmin, requirePermission(PERMISSIONS.AUDIT_VIEW));
 
 router.get('/', async (req: AuthRequest, res: Response) => {
-  const { page = '1', limit = '50', action, userId, from, to } = req.query;
+  const { page = '1', limit = '50', action, userId, userSearch, from, to } = req.query;
   const limitNum = Math.min(Math.max(parseInt(limit as string) || 50, 1), 200);
 
   const dateError = validateDateRange(from as string, to as string);
@@ -24,7 +24,8 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     action as string,
     userId as string,
     from as string,
-    to as string
+    to as string,
+    userSearch as string
   );
   return paginated(res, result.logs, result.total, parseInt(page as string) || 1, limitNum);
 });
@@ -35,7 +36,7 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
 });
 
 router.get('/export', async (req: AuthRequest, res: Response) => {
-  const { action, userId, from, to } = req.query;
+  const { action, userId, userSearch, from, to } = req.query;
   const dateError = validateDateRange(from as string, to as string);
   if (dateError) return badRequest(res, dateError);
 
@@ -43,7 +44,8 @@ router.get('/export', async (req: AuthRequest, res: Response) => {
     action as string,
     userId as string,
     from as string,
-    to as string
+    to as string,
+    userSearch as string
   );
 
   const BOM = '\uFEFF';
@@ -61,8 +63,12 @@ router.get('/export', async (req: AuthRequest, res: Response) => {
 
   const escape = (val: any) => {
     if (val === null || val === undefined) return '';
-    const s = String(val);
-    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+    let s = String(val);
+    // CSV injection defense: nếu bắt đầu bằng ký tự formula nguy hiểm, prefix apostrophe
+    if (/^[=+\-@\t\r]/.test(s)) {
+      s = `'${s}`;
+    }
+    if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
       return `"${s.replace(/"/g, '""')}"`;
     }
     return s;
