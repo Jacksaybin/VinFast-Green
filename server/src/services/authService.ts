@@ -299,14 +299,26 @@ export const authService = {
     };
   },
 
-  async getAllUsers(page = 1, limit = 20): Promise<{ users: User[]; total: number }> {
+  async getAllUsers(page = 1, limit = 20): Promise<{ users: any[]; total: number }> {
     const offset = (page - 1) * limit;
     const total = (await queryOne<{ count: string }>('SELECT COUNT(*) as count FROM users'))?.count || '0';
-    const users = await query<User>(
+    const rows = await query(
       `SELECT id, phone, full_name, email, role, status, referral_code, referred_by, kyc_status, created_at
        FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
       [limit, offset]
     );
+    const users = rows.map((u: any) => ({
+      id: u.id,
+      phone: u.phone,
+      fullName: u.full_name,
+      email: u.email,
+      role: u.role,
+      status: u.status,
+      referralCode: u.referral_code,
+      referredBy: u.referred_by,
+      kycStatus: u.kyc_status,
+      createdAt: u.created_at,
+    }));
     return { users, total: parseInt(total) };
   },
 
@@ -333,27 +345,84 @@ export const authService = {
 
   async updateAdmin(
     adminId: string,
-    data: { role?: 'admin' | 'super_admin'; permissions?: Record<string, boolean> }
-  ): Promise<boolean> {
+    data: { role?: 'admin' | 'super_admin'; permissions?: Record<string, boolean> },
+    actor?: { id: string; role: string }
+  ): Promise<{ success: boolean; error?: string }> {
+    // Guard: super_admin không được tự hạ role của chính mình
+    if (actor && actor.id === adminId && data.role && data.role !== 'super_admin') {
+      return { success: false, error: 'Không thể tự hạ quyền super_admin của chính bạn' };
+    }
+
+    // Guard: phải còn ít nhất 1 super_admin
+    if (data.role === 'admin' || (data.role === undefined && data.permissions !== undefined)) {
+      // Khi đổi role hoặc permissions, kiểm tra vẫn còn super_admin
+      const target = await queryOne<{ role: string }>('SELECT role FROM users WHERE id = $1', [adminId]);
+      if (target?.role === 'super_admin' && data.role === 'admin') {
+        const superCount = await queryOne<{ count: string }>(
+          `SELECT COUNT(*) as count FROM users WHERE role = 'super_admin' AND id != $1`,
+          [adminId]
+        );
+        if (parseInt(superCount?.count || '0') === 0) {
+          return { success: false, error: 'Không thể hạ quyền super_admin cuối cùng của hệ thống' };
+        }
+      }
+    }
+
+    const oldData: any = {};
     if (data.role !== undefined) {
+      const before = await queryOne<{ role: string }>('SELECT role FROM users WHERE id = $1', [adminId]);
+      oldData.role = before?.role;
       await execute('UPDATE users SET role = $1 WHERE id = $2', [data.role, adminId]);
     }
     if (data.permissions !== undefined) {
+      const before = await queryOne<{ permissions: any }>('SELECT permissions FROM users WHERE id = $1', [adminId]);
+      oldData.permissions = before?.permissions || {};
       await execute('UPDATE users SET permissions = $1 WHERE id = $2', [JSON.stringify(data.permissions), adminId]);
     }
-    await auditLog({ action: 'admin_updated', entityId: adminId, newData: data });
-    return true;
+
+    // Phân biệt action type cho dễ audit
+    const action = data.role !== undefined ? 'user_role_changed' : 'user_permissions_changed';
+    await auditLog({
+      userId: adminId,
+      action: 'admin_updated' as any,
+      entityId: adminId,
+      oldData,
+      newData: data,
+    });
+    await auditLog({
+      userId: adminId,
+      action,
+      entityId: adminId,
+      oldData,
+      newData: data,
+    });
+
+    return { success: true };
   },
 
   async updateUserStatus(
     userId: string,
-    status: 'active' | 'suspended'
-  ): Promise<boolean> {
+    status: 'active' | 'suspended',
+    actor?: { id: string; role: string }
+  ): Promise<{ success: boolean; error?: string }> {
+    const before = await queryOne<{ status: string }>('SELECT status FROM users WHERE id = $1', [userId]);
+    if (!before) return { success: false, error: 'Không tìm thấy người dùng' };
+
     const count = await execute(
       'UPDATE users SET status = $1 WHERE id = $2',
       [status, userId]
     );
-    return count > 0;
+    if (count === 0) return { success: false, error: 'Cập nhật thất bại' };
+
+    await auditLog({
+      userId,
+      action: 'user_status_changed',
+      entityId: userId,
+      oldData: { status: before.status },
+      newData: { status, actorId: actor?.id },
+    });
+
+    return { success: true };
   },
 
   async getStats(): Promise<{

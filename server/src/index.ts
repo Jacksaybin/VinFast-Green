@@ -24,6 +24,7 @@ import referralRouter from './routes/referrals';
 import reinvestmentRouter from './routes/reinvestments';
 import { investmentService } from './services/investmentService';
 import { testConnection, query, queryOne } from './db';
+import { auditLog } from './middleware/audit';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -147,25 +148,75 @@ async function start() {
   const MAX_JOB_LOCK_MS = 30 * 1000;
   let jobRunning = false;
   let jobLastResult: string | null = null;
+  let jobLastRunAt: string | null = null;
+  let jobTotalRuns = 0;
 
-  async function runProfitJob() {
+  async function runProfitJob(trigger: 'cron' | 'manual' = 'cron') {
     if (jobRunning) return;
     jobRunning = true;
+    const runStart = Date.now();
     try {
       const result = await investmentService.addDailyProfits();
       jobLastResult = `credited=${result.credited}, completed=${result.completed}`;
+      jobLastRunAt = new Date().toISOString();
+      jobTotalRuns++;
+      const durationMs = Date.now() - runStart;
+
+      // Log cron run tới audit log (chỉ khi có hoạt động thực sự)
       if (result.credited > 0 || result.completed > 0) {
         console.log(`💸 Daily profit job: ${jobLastResult}`);
+        try {
+          await auditLog({
+            action: 'cron_profit_run',
+            entityType: 'system_job',
+            newData: {
+              trigger,
+              credited: result.credited,
+              completed: result.completed,
+              checked: result.checked,
+              durationMs,
+              runAt: jobLastRunAt,
+            },
+          });
+        } catch (logErr) {
+          console.error('Failed to audit cron run:', logErr);
+        }
       }
     } catch (err) {
       console.error('⚠️  Daily profit job failed:', err);
+      try {
+        await auditLog({
+          action: 'cron_profit_run',
+          entityType: 'system_job',
+          newData: {
+            trigger,
+            status: 'failed',
+            error: String(err),
+            durationMs: Date.now() - runStart,
+            runAt: new Date().toISOString(),
+          },
+        });
+      } catch {}
     } finally {
       setTimeout(() => { jobRunning = false; }, MAX_JOB_LOCK_MS);
     }
   }
 
-  runProfitJob();
-  setInterval(runProfitJob, 5 * 60 * 1000);
+  // Health endpoint mở rộng để monitoring
+  app.get('/health/cron', (_req, res) => {
+    res.json({
+      success: true,
+      data: {
+        jobRunning,
+        jobLastResult,
+        jobLastRunAt,
+        jobTotalRuns,
+      },
+    });
+  });
+
+  runProfitJob('cron');
+  setInterval(() => runProfitJob('cron'), 5 * 60 * 1000);
 
   app.listen(PORT, () => {
     console.log(`\n✅ Server running on http://localhost:${PORT}`);
