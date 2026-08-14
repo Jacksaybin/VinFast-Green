@@ -191,14 +191,14 @@ const LiveChat: React.FC = () => {
         <div className="relative">
           {/* Notification Badge */}
           {!isOpen && (
-            <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center z-10">
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-danger-subtle0 rounded-full flex items-center justify-center z-10">
               <span className="text-white text-xs font-bold">1</span>
             </div>
           )}
 
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center transform hover:scale-105 relative overflow-hidden"
+            className="w-16 h-16 bg-gradient-to-br from-brand-primary-500 to-green-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center transform hover:scale-105 relative overflow-hidden"
           >
             <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-20"></div>
 
@@ -213,20 +213,20 @@ const LiveChat: React.FC = () => {
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 w-80 h-96 bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 flex flex-col overflow-hidden max-w-[calc(100vw-3rem)]">
+        <div className="fixed bottom-24 right-6 w-80 h-96 bg-card rounded-2xl shadow-2xl border border-border z-50 flex flex-col overflow-hidden max-w-[calc(100vw-3rem)]">
           {/* Header */}
-          <div className="bg-gradient-to-r from-green-600 to-green-700 p-4 text-white flex-shrink-0">
+          <div className="bg-gradient-to-r from-brand-primary-600 to-brand-primary-700 p-4 text-white flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-card/20 flex items-center justify-center">
                     <img src={SUPPORT_AVATAR} alt="support" className="w-full h-full object-cover" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm">V-GREEN Support</h3>
                     <div className="flex items-center space-x-1">
                       <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-300' : 'bg-gray-400'}`}></div>
-                      <span className="text-xs text-green-100">
+                      <span className="text-xs text-primary-foreground">
                         {isOnline ? 'Đang trực tuyến' : 'Offline - hỗ trợ tự động'}
                       </span>
                     </div>
@@ -241,13 +241,13 @@ const LiveChat: React.FC = () => {
           </div>
 
           {/* Messages Container */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-background">
             {isLoading && (
-              <div className="text-center text-xs text-gray-400 py-4">Đang tải hội thoại...</div>
+              <div className="text-center text-xs text-muted-foreground py-4">Đang tải hội thoại...</div>
             )}
 
             {!hasSent && !isLoading && (
-              <div className="text-center text-xs text-gray-500 bg-white rounded-lg p-3 border">
+              <div className="text-center text-xs text-muted-foreground bg-card rounded-lg p-3 border">
                 Chào {user?.fullName ? `anh/chị ${user.fullName}` : 'bạn'}! Đặt câu hỏi bên dưới, chuyên viên tư vấn sẽ phản hồi trong thời gian sớm nhất.
               </div>
             )}
@@ -257,12 +257,12 @@ const LiveChat: React.FC = () => {
                 <div className={`max-w-xs ${message.sender === 'user' ? 'order-2' : 'order-1'}`}>
                   <div className={`px-4 py-2 rounded-2xl ${
                     message.sender === 'user'
-                      ? 'bg-green-600 text-white rounded-br-md'
-                      : 'bg-white text-gray-800 rounded-bl-md shadow-sm border'
+                      ? 'bg-primary text-white rounded-br-md'
+                      : 'bg-card text-gray-800 rounded-bl-md shadow-sm border'
                   }`}>
                     <p className="text-sm break-words">{message.text}</p>
                   </div>
-                  <div className={`text-xs text-gray-500 mt-1 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}>
+                  <div className={`text-xs text-muted-foreground mt-1 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}>
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
@@ -277,10 +277,10 @@ const LiveChat: React.FC = () => {
             {/* Typing Indicator */}
             {isTyping && (
               <div className="flex justify-start">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-2 flex-shrink-0">
-                  <Bot className="w-4 h-4 text-green-600" />
+                <div className="w-8 h-8 bg-success-subtle rounded-full flex items-center justify-center mr-2 flex-shrink-0">
+                  <Bot className="w-4 h-4 text-primary" />
                 </div>
-                <div className="bg-white px-4 py-2 rounded-2xl rounded-bl-md shadow-sm border max-w-xs">
+                <div className="bg-card px-4 py-2 rounded-2xl rounded-bl-md shadow-sm border max-w-xs">
                   <div className="flex space-x-1">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -295,14 +295,14 @@ const LiveChat: React.FC = () => {
 
           {/* Quick Replies */}
           {!hasSent && (
-            <div className="p-3 bg-white border-t flex-shrink-0">
-              <p className="text-xs text-gray-500 mb-2">Câu hỏi thường gặp:</p>
+            <div className="p-3 bg-card border-t flex-shrink-0">
+              <p className="text-xs text-muted-foreground mb-2">Câu hỏi thường gặp:</p>
               <div className="flex flex-wrap gap-2">
                 {quickReplies.map((reply, index) => (
                   <button
                     key={index}
                     onClick={() => setInputMessage(reply)}
-                    className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs hover:bg-green-200 transition-colors"
+                    className="px-3 py-1 bg-success-subtle text-primary rounded-full text-xs hover:bg-green-200 transition-colors"
                   >
                     {reply}
                   </button>
@@ -312,7 +312,7 @@ const LiveChat: React.FC = () => {
           )}
 
           {/* Input Area */}
-          <div className="p-4 bg-white border-t flex-shrink-0">
+          <div className="p-4 bg-card border-t flex-shrink-0">
             <div className="flex items-center space-x-2">
               <input
                 type="text"
@@ -320,12 +320,12 @@ const LiveChat: React.FC = () => {
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Nhập tin nhắn..."
-                className="flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                className="flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-primary text-sm"
               />
               <button
                 onClick={handleSendMessage}
                 disabled={!inputMessage.trim() || isTyping}
-                className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center hover:bg-green-700 transition-colors disabled:opacity-50"
+                className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center hover:bg-primary transition-colors disabled:opacity-50"
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -333,8 +333,8 @@ const LiveChat: React.FC = () => {
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-2 bg-gray-50 border-t flex-shrink-0">
-            <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
+          <div className="px-4 py-2 bg-background border-t flex-shrink-0">
+            <div className="flex items-center justify-center space-x-2 text-xs text-muted-foreground">
               <Clock className="w-3 h-3" />
               <span>Hỗ trợ 24/7</span>
             </div>

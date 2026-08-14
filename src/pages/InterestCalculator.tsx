@@ -57,7 +57,7 @@ const InterestCalculator: React.FC = () => {
   const profitCalculation = selectedPackage ? calculateProfit(selectedPackage, investmentAmount) : null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Header />
       
       {/* Hero Section */}
@@ -65,9 +65,9 @@ const InterestCalculator: React.FC = () => {
         <div className="absolute top-4 left-4 z-10">
           <button 
             onClick={() => navigate('/')}
-            className="bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg"
+            className="bg-card/90 backdrop-blur-sm p-2 rounded-full shadow-elevated"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-700" />
+            <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
         </div>
         
@@ -86,26 +86,26 @@ const InterestCalculator: React.FC = () => {
 
       <div className="px-4 pb-20">
         {/* Interactive Calculator */}
-        <div className="bg-white rounded-xl shadow-sm p-6 -mt-6 relative z-10 mb-6">
+        <div className="bg-card rounded-xl shadow-card p-6 -mt-6 relative z-10 mb-6">
           <div className="flex items-center space-x-3 mb-4">
             <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
               <Calculator className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Máy Tính Lợi Nhuận</h2>
-              <p className="text-sm text-gray-600">Tính toán lợi nhuận theo gói đầu tư</p>
+              <h2 className="text-lg font-semibold text-foreground">Máy Tính Lợi Nhuận</h2>
+              <p className="text-sm text-muted-foreground">Tính toán lợi nhuận theo gói đầu tư</p>
             </div>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Chọn gói đầu tư
               </label>
               <select
                 value={selectedPackage}
                 onChange={(e) => setSelectedPackage(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full p-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <option value="">-- Chọn gói đầu tư --</option>
                 {packages.map(pkg => (
@@ -117,49 +117,49 @@ const InterestCalculator: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-foreground mb-2">
                 Số tiền đầu tư (VND)
               </label>
               <input
                 type="number"
                 value={investmentAmount}
                 onChange={(e) => setInvestmentAmount(Number(e.target.value))}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full p-3 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 placeholder="Nhập số tiền đầu tư"
                 min={selectedPkg?.investmentAmount || 50000000}
               />
               {selectedPkg && (
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Tối thiểu: {selectedPkg.investmentAmount.toLocaleString()} VND
                 </p>
               )}
             </div>
 
             {profitCalculation && (
-              <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border border-green-200">
-                <h3 className="font-semibold text-green-800 mb-3">Kết quả tính toán</h3>
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border border-success/20">
+                <h3 className="font-semibold text-success-strong mb-3">Kết quả tính toán</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white p-3 rounded-lg">
-                    <div className="text-sm text-gray-600">Lợi nhuận hàng ngày</div>
-                    <div className="text-lg font-bold text-green-600">
+                  <div className="bg-card p-3 rounded-lg">
+                    <div className="text-sm text-muted-foreground">Lợi nhuận hàng ngày</div>
+                    <div className="text-lg font-bold text-primary">
                       {profitCalculation.dailyProfit.toLocaleString()} VND
                     </div>
                   </div>
-                  <div className="bg-white p-3 rounded-lg">
-                    <div className="text-sm text-gray-600">Tổng lợi nhuận</div>
-                    <div className="text-lg font-bold text-blue-600">
+                  <div className="bg-card p-3 rounded-lg">
+                    <div className="text-sm text-muted-foreground">Tổng lợi nhuận</div>
+                    <div className="text-lg font-bold text-info">
                       {profitCalculation.totalProfit.toLocaleString()} VND
                     </div>
                   </div>
-                  <div className="bg-white p-3 rounded-lg">
-                    <div className="text-sm text-gray-600">Tổng tiền nhận</div>
+                  <div className="bg-card p-3 rounded-lg">
+                    <div className="text-sm text-muted-foreground">Tổng tiền nhận</div>
                     <div className="text-lg font-bold text-purple-600">
                       {profitCalculation.totalReturn.toLocaleString()} VND
                     </div>
                   </div>
-                  <div className="bg-white p-3 rounded-lg">
-                    <div className="text-sm text-gray-600">Tỷ lệ lợi nhuận</div>
-                    <div className="text-lg font-bold text-red-600">
+                  <div className="bg-card p-3 rounded-lg">
+                    <div className="text-sm text-muted-foreground">Tỷ lệ lợi nhuận</div>
+                    <div className="text-lg font-bold text-danger">
                       {profitCalculation.percentage.toFixed(1)}%
                     </div>
                   </div>
@@ -170,17 +170,17 @@ const InterestCalculator: React.FC = () => {
         </div>
 
         {/* Interest Rate Table */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <div className="bg-card rounded-xl shadow-card p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Bảng Lãi Xuất Chi Tiết</h2>
+            <h2 className="text-lg font-semibold text-foreground">Bảng Lãi Xuất Chi Tiết</h2>
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="text-xs text-gray-600">Live rates</span>
+              <div className="w-3 h-3 bg-primary rounded-full"></div>
+              <span className="text-xs text-muted-foreground">Live rates</span>
             </div>
           </div>
           
           <div className="mb-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Bảng tính lãi suất chi tiết cho các gói đầu tư V-GREEN Fund
             </p>
           </div>
@@ -188,22 +188,22 @@ const InterestCalculator: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-2 font-medium text-gray-700">Gói đầu tư</th>
-                  <th className="text-center py-3 px-2 font-medium text-gray-700">Ngày</th>
-                  <th className="text-center py-3 px-2 font-medium text-gray-700">Tháng</th>
-                  <th className="text-center py-3 px-2 font-medium text-gray-700">Năm</th>
-                  <th className="text-center py-3 px-2 font-medium text-gray-700">Tổng lãi</th>
+                <tr className="border-b border-border">
+                  <th className="text-left py-3 px-2 font-medium text-foreground">Gói đầu tư</th>
+                  <th className="text-center py-3 px-2 font-medium text-foreground">Ngày</th>
+                  <th className="text-center py-3 px-2 font-medium text-foreground">Tháng</th>
+                  <th className="text-center py-3 px-2 font-medium text-foreground">Năm</th>
+                  <th className="text-center py-3 px-2 font-medium text-foreground">Tổng lãi</th>
                 </tr>
               </thead>
               <tbody>
                 {packages.map((pkg, index) => {
                   const rates = calculateInterestRates(pkg.dailyProfit, pkg.investmentPeriod);
                   return (
-                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                    <tr key={index} className="border-b border-border hover:bg-background">
                       <td className="py-3 px-2">
-                        <div className="font-medium text-gray-900 text-xs">{pkg.name}</div>
-                        <div className="text-xs text-gray-500">
+                        <div className="font-medium text-foreground text-xs">{pkg.name}</div>
+                        <div className="text-xs text-muted-foreground">
                           {pkg.investmentAmount >= 1000000000 
                             ? `${(pkg.investmentAmount / 1000000000).toFixed(0)}B` 
                             : `${(pkg.investmentAmount / 1000000).toFixed(0)}M`
@@ -211,17 +211,17 @@ const InterestCalculator: React.FC = () => {
                         </div>
                       </td>
                       <td className="text-center py-3 px-2">
-                        <div className="font-semibold text-green-600">{pkg.dailyProfit}%</div>
+                        <div className="font-semibold text-primary">{pkg.dailyProfit}%</div>
                       </td>
                       <td className="text-center py-3 px-2">
-                        <div className="font-semibold text-blue-600">{rates.monthly.toFixed(1)}%</div>
+                        <div className="font-semibold text-info">{rates.monthly.toFixed(1)}%</div>
                       </td>
                       <td className="text-center py-3 px-2">
                         <div className="font-semibold text-purple-600">{rates.yearly.toFixed(0)}%</div>
                       </td>
                       <td className="text-center py-3 px-2">
-                        <div className="font-bold text-red-600">{rates.totalReturn.toFixed(1)}%</div>
-                        <div className="text-xs text-gray-500">{pkg.investmentPeriod}d</div>
+                        <div className="font-bold text-danger">{rates.totalReturn.toFixed(1)}%</div>
+                        <div className="text-xs text-muted-foreground">{pkg.investmentPeriod}d</div>
                       </td>
                     </tr>
                   );
@@ -232,13 +232,13 @@ const InterestCalculator: React.FC = () => {
           
           {/* Quick Stats */}
           <div className="mt-4 grid grid-cols-3 gap-4">
-            <div className="bg-green-50 p-3 rounded-lg text-center">
-              <div className="text-lg font-bold text-green-600">0.2% - 2.2%</div>
-              <div className="text-xs text-green-700">Lãi suất hàng ngày</div>
+            <div className="bg-success-subtle p-3 rounded-lg text-center">
+              <div className="text-lg font-bold text-primary">0.2% - 2.2%</div>
+              <div className="text-xs text-primary">Lãi suất hàng ngày</div>
             </div>
-            <div className="bg-blue-50 p-3 rounded-lg text-center">
-              <div className="text-lg font-bold text-blue-600">6% - 66%</div>
-              <div className="text-xs text-blue-700">Lãi suất hàng tháng</div>
+            <div className="bg-info-subtle p-3 rounded-lg text-center">
+              <div className="text-lg font-bold text-info">6% - 66%</div>
+              <div className="text-xs text-info-strong">Lãi suất hàng tháng</div>
             </div>
             <div className="bg-purple-50 p-3 rounded-lg text-center">
               <div className="text-lg font-bold text-purple-600">73% - 803%</div>
@@ -248,22 +248,22 @@ const InterestCalculator: React.FC = () => {
         </div>
 
         {/* Investment Benefits */}
-        <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border border-green-200 mb-6">
+        <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border border-success/20 mb-6">
           <div className="flex items-start space-x-3">
-            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <TrendingUp className="w-4 h-4 text-green-600" />
+            <div className="w-8 h-8 bg-success-subtle rounded-full flex items-center justify-center flex-shrink-0">
+              <TrendingUp className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <h4 className="font-medium text-green-800 text-sm mb-2">Quyền lợi đầu tư V-GREEN</h4>
+              <h4 className="font-medium text-success-strong text-sm mb-2">Quyền lợi đầu tư V-GREEN</h4>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div className="space-y-1">
                   <div className="flex items-center space-x-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-green-700"><strong>Lãi suất hàng ngày:</strong> 0.2% - 2.2%</span>
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
+                    <span className="text-primary"><strong>Lãi suất hàng ngày:</strong> 0.2% - 2.2%</span>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <span className="text-blue-700"><strong>Lãi suất hàng tháng:</strong> 6% - 66%</span>
+                    <div className="w-2 h-2 bg-info-subtle0 rounded-full"></div>
+                    <span className="text-info-strong"><strong>Lãi suất hàng tháng:</strong> 6% - 66%</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
@@ -272,12 +272,12 @@ const InterestCalculator: React.FC = () => {
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center space-x-1">
-                    <Shield className="w-3 h-3 text-green-600" />
-                    <span className="text-green-700"><strong>Bảo đảm:</strong> 100% an toàn</span>
+                    <Shield className="w-3 h-3 text-primary" />
+                    <span className="text-primary"><strong>Bảo đảm:</strong> 100% an toàn</span>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <Clock className="w-3 h-3 text-blue-600" />
-                    <span className="text-blue-700"><strong>Linh hoạt:</strong> 30-365 ngày</span>
+                    <Clock className="w-3 h-3 text-info" />
+                    <span className="text-info-strong"><strong>Linh hoạt:</strong> 30-365 ngày</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Star className="w-3 h-3 text-purple-600" />
@@ -290,10 +290,10 @@ const InterestCalculator: React.FC = () => {
         </div>
 
         {/* Calculation Method */}
-        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mb-6">
+        <div className="bg-warning-subtle p-4 rounded-lg border border-yellow-200 mb-6">
           <div className="flex items-start space-x-3">
-            <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <Info className="w-4 h-4 text-yellow-600" />
+            <div className="w-8 h-8 bg-warning-subtle rounded-full flex items-center justify-center flex-shrink-0">
+              <Info className="w-4 h-4 text-warning-strong" />
             </div>
             <div>
               <h4 className="font-medium text-yellow-800 text-sm mb-2">Cách tính lãi suất</h4>
@@ -308,14 +308,14 @@ const InterestCalculator: React.FC = () => {
         </div>
 
         {/* Call to Action */}
-        <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl shadow-lg p-6 text-white text-center">
+        <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl shadow-elevated p-6 text-white text-center">
           <h2 className="text-lg font-bold mb-2">Sẵn sàng đầu tư?</h2>
           <p className="text-purple-100 text-sm mb-4">
             Chọn gói đầu tư phù hợp và bắt đầu kiếm lợi nhuận
           </p>
           <button 
             onClick={() => navigate('/investment')}
-            className="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-purple-50 transition-colors"
+            className="bg-card text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-purple-50 transition-colors"
           >
             Xem gói đầu tư
           </button>

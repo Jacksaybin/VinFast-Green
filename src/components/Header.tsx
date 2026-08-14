@@ -1,6 +1,7 @@
-
 /**
  * Header component - Top navigation bar with logo, search, user actions and real notifications
+ * Đã tinh chỉnh: Logo SVG V-GREEN + focus-visible ring, brand token (brand-primary-*)
+ * cho search focus, notif highlight và avatar gradient brand, dark-mode friendly.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -9,6 +10,7 @@ import { useNavigate } from 'react-router';
 import { useAuthStore } from '../stores/authStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { formatDate } from '../lib/format';
+import { LogoVGreen } from './ui/illustrations';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -48,45 +50,49 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+    <header className="glass-card sticky top-0 z-40 border-b border-border">
       <div className="px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo and Mobile Menu */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors"
+              aria-label="Mở menu"
             >
               {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
 
-            <div className="flex items-center space-x-2">
-              <div
-                className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center cursor-pointer"
-                onClick={() => navigate('/')}
-              >
-                <span className="text-white font-bold text-sm">V</span>
-              </div>
-              <span className="text-lg font-bold text-green-600 hidden sm:block cursor-pointer" onClick={() => navigate('/')}>
-                V-GREEN
-              </span>
+            <div
+              className="cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary-500 rounded-md"
+              onClick={() => navigate('/')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  navigate('/');
+                }
+              }}
+            >
+              <LogoVGreen variant="full" theme="auto" />
             </div>
           </div>
 
           {/* Search Bar - Hidden on mobile */}
           <div className="hidden md:flex flex-1 max-w-md mx-8">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <input
                 type="text"
                 placeholder="Tìm kiếm..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary-500 focus:border-transparent transition-all"
               />
             </div>
           </div>
 
           {/* User Actions */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
             {/* Notification Bell */}
             {isAuthenticated ? (
               <div className="relative">
@@ -95,11 +101,12 @@ const Header: React.FC = () => {
                     setShowNotifDropdown(!showNotifDropdown);
                     setShowUserDropdown(false);
                   }}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+                  className="p-2 rounded-lg hover:bg-muted transition-colors relative"
+                  aria-label="Thông báo"
                 >
-                  <Bell className="w-6 h-6 text-gray-600" />
+                  <Bell className="w-5 h-5 text-muted-foreground" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-danger rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-sm">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
@@ -112,16 +119,18 @@ const Header: React.FC = () => {
                       className="fixed inset-0 z-40"
                       onClick={() => setShowNotifDropdown(false)}
                     />
-                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden flex flex-col">
-                      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                        <h3 className="font-semibold text-gray-900">Thông báo</h3>
+                    <div className="absolute right-0 mt-2 w-80 glass-card rounded-xl shadow-elevated z-50 max-h-96 overflow-hidden flex flex-col animate-slide-down">
+                      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                        <h3 className="font-semibold text-foreground">Thông báo</h3>
                         {unreadCount > 0 && (
-                          <span className="text-xs text-green-600 font-medium">{unreadCount} chưa đọc</span>
+                          <span className="text-xs text-brand-primary-600 dark:text-brand-primary-400 font-medium">
+                            {unreadCount} chưa đọc
+                          </span>
                         )}
                       </div>
-                      <div className="overflow-y-auto flex-1 max-h-72">
+                      <div className="overflow-y-auto flex-1 max-h-72 scrollbar-thin">
                         {notifications.length === 0 ? (
-                          <div className="p-6 text-center text-gray-500 text-sm">
+                          <div className="p-6 text-center text-muted-foreground text-sm">
                             Chưa có thông báo nào
                           </div>
                         ) : (
@@ -129,18 +138,18 @@ const Header: React.FC = () => {
                             <button
                               key={notif.id}
                               onClick={() => handleNotifClick(notif.id, notif.link)}
-                              className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-gray-50 transition-colors ${
-                                !notif.read ? 'bg-green-50/50' : ''
+                              className={`w-full text-left px-4 py-3 border-b border-border/50 hover:bg-muted transition-colors ${
+                                !notif.read ? 'bg-brand-primary-500/5' : ''
                               }`}
                             >
                               <div className="flex items-start gap-2">
                                 {!notif.read && (
-                                  <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
+                                  <div className="w-2 h-2 rounded-full bg-brand-primary-500 mt-1.5 flex-shrink-0" />
                                 )}
                                 <div className={!notif.read ? '' : 'ml-4'}>
-                                  <p className="text-sm font-medium text-gray-900">{notif.title}</p>
-                                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.message}</p>
-                                  <p className="text-xs text-gray-400 mt-1">{formatDate(notif.createdAt)}</p>
+                                  <p className="text-sm font-medium text-foreground">{notif.title}</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.message}</p>
+                                  <p className="text-xs text-muted-foreground/70 mt-1">{formatDate(notif.createdAt)}</p>
                                 </div>
                               </div>
                             </button>
@@ -153,7 +162,7 @@ const Header: React.FC = () => {
                             setShowNotifDropdown(false);
                             navigate('/notifications');
                           }}
-                          className="w-full px-4 py-3 text-sm text-green-600 font-medium hover:bg-green-50 transition-colors border-t border-gray-100"
+                          className="w-full px-4 py-3 text-sm text-brand-primary-600 dark:text-brand-primary-400 font-medium hover:bg-brand-primary-500/10 transition-colors border-t border-border"
                         >
                           Xem tất cả thông báo
                         </button>
@@ -171,12 +180,13 @@ const Header: React.FC = () => {
                   setShowUserDropdown(!showUserDropdown);
                   setShowNotifDropdown(false);
                 }}
-                className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="flex items-center space-x-2 p-2 rounded-lg hover:bg-muted transition-colors"
+                aria-label="Tài khoản"
               >
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
+                <div className="w-8 h-8 bg-gradient-brand rounded-full flex items-center justify-center shadow-glow">
+                  <User className="w-4 h-4 text-white" />
                 </div>
-                <ChevronDown className="w-4 h-4 text-gray-600 hidden sm:block" />
+                <ChevronDown className="w-4 h-4 text-muted-foreground hidden sm:block" />
               </button>
 
               {/* User Dropdown */}
@@ -186,16 +196,16 @@ const Header: React.FC = () => {
                     className="fixed inset-0 z-40"
                     onClick={() => setShowUserDropdown(false)}
                   />
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <div className="absolute right-0 mt-2 w-56 glass-card rounded-xl shadow-elevated py-2 z-50 animate-slide-down">
                     {isAuthenticated ? (
                       <>
-                        <div className="px-4 py-2 border-b border-gray-100">
-                          <p className="text-sm font-medium text-gray-900">{user?.fullName}</p>
-                          <p className="text-xs text-gray-500">{user?.phone}</p>
+                        <div className="px-4 py-2 border-b border-border">
+                          <p className="text-sm font-medium text-foreground">{user?.fullName}</p>
+                          <p className="text-xs text-muted-foreground">{user?.phone}</p>
                         </div>
                         <button
                           onClick={handleProfile}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors flex items-center space-x-2"
+                          className="w-full text-left px-4 py-2 hover:bg-muted transition-colors flex items-center space-x-2 text-foreground"
                         >
                           <User className="w-4 h-4" />
                           <span>Tài khoản của tôi</span>
@@ -205,7 +215,7 @@ const Header: React.FC = () => {
                             setShowUserDropdown(false);
                             navigate('/referral');
                           }}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors flex items-center space-x-2"
+                          className="w-full text-left px-4 py-2 hover:bg-muted transition-colors flex items-center space-x-2 text-foreground"
                         >
                           <Users className="w-4 h-4" />
                           <span>Giới thiệu bạn bè</span>
@@ -215,7 +225,7 @@ const Header: React.FC = () => {
                             setShowUserDropdown(false);
                             navigate('/reinvest');
                           }}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors flex items-center space-x-2"
+                          className="w-full text-left px-4 py-2 hover:bg-muted transition-colors flex items-center space-x-2 text-foreground"
                         >
                           <RefreshCw className="w-4 h-4" />
                           <span>Tái đầu tư</span>
@@ -225,20 +235,20 @@ const Header: React.FC = () => {
                             setShowUserDropdown(false);
                             navigate('/notifications');
                           }}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors flex items-center space-x-2"
+                          className="w-full text-left px-4 py-2 hover:bg-muted transition-colors flex items-center space-x-2 text-foreground"
                         >
                           <Bell className="w-4 h-4" />
                           <span>Thông báo</span>
                           {unreadCount > 0 && (
-                            <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                            <span className="ml-auto bg-danger text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
                               {unreadCount}
                             </span>
                           )}
                         </button>
-                        <hr className="my-2" />
+                        <hr className="my-2 border-border" />
                         <button
                           onClick={handleLogout}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors flex items-center space-x-2 text-red-600"
+                          className="w-full text-left px-4 py-2 hover:bg-danger/10 transition-colors flex items-center space-x-2 text-danger"
                         >
                           <LogOut className="w-4 h-4" />
                           <span>Đăng xuất</span>
@@ -251,7 +261,7 @@ const Header: React.FC = () => {
                             setShowUserDropdown(false);
                             navigate('/login');
                           }}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors"
+                          className="w-full text-left px-4 py-2 hover:bg-muted transition-colors text-foreground"
                         >
                           Đăng nhập
                         </button>
@@ -260,7 +270,7 @@ const Header: React.FC = () => {
                             setShowUserDropdown(false);
                             navigate('/register');
                           }}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors"
+                          className="w-full text-left px-4 py-2 hover:bg-muted transition-colors text-foreground"
                         >
                           Đăng ký
                         </button>
@@ -276,33 +286,33 @@ const Header: React.FC = () => {
 
       {/* Mobile Menu */}
       {showMobileMenu && (
-        <div className="md:hidden border-t border-gray-200 bg-white">
+        <div className="md:hidden border-t border-border bg-background animate-slide-down">
           <div className="px-4 py-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <input
                 type="text"
                 placeholder="Tìm kiếm..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary-500 focus:border-transparent"
               />
             </div>
           </div>
           <nav className="px-4 py-2 space-y-1">
-            <button onClick={() => { navigate('/'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">Trang chủ</button>
-            <button onClick={() => { navigate('/investment'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">Đầu tư</button>
-            <button onClick={() => { navigate('/news'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">Tin tức</button>
-            <button onClick={() => { navigate('/benefits'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">Phúc lợi</button>
+            <button onClick={() => { navigate('/'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Trang chủ</button>
+            <button onClick={() => { navigate('/investment'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Đầu tư</button>
+            <button onClick={() => { navigate('/news'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Tin tức</button>
+            <button onClick={() => { navigate('/benefits'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Phúc lợi</button>
             {isAuthenticated ? (
               <>
-                <button onClick={() => { navigate('/my-account'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">Tài khoản</button>
-                <button onClick={() => { navigate('/wallet'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">Ví</button>
-                <button onClick={() => { navigate('/referral'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">Giới thiệu bạn bè</button>
-                <button onClick={() => { navigate('/reinvest'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">Tái đầu tư</button>
+                <button onClick={() => { navigate('/my-account'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Tài khoản</button>
+                <button onClick={() => { navigate('/wallet'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Ví</button>
+                <button onClick={() => { navigate('/referral'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Giới thiệu bạn bè</button>
+                <button onClick={() => { navigate('/reinvest'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Tái đầu tư</button>
               </>
             ) : (
               <>
-                <button onClick={() => { navigate('/login'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">Đăng nhập</button>
-                <button onClick={() => { navigate('/register'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">Đăng ký</button>
+                <button onClick={() => { navigate('/login'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Đăng nhập</button>
+                <button onClick={() => { navigate('/register'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Đăng ký</button>
               </>
             )}
           </nav>

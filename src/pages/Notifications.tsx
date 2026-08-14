@@ -31,14 +31,14 @@ const Notifications: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Header />
 
       <div className="px-4 py-4 pb-24">
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Quay lại</span>
@@ -46,7 +46,7 @@ const Notifications: React.FC = () => {
           {notifications.some((n) => !n.read) && (
             <button
               onClick={() => markAllAsRead(user.id)}
-              className="flex items-center gap-1 text-sm text-green-600 hover:underline"
+              className="flex items-center gap-1 text-sm text-primary hover:underline"
             >
               <CheckCheck className="w-4 h-4" />
               Đánh dấu đã đọc
@@ -54,13 +54,13 @@ const Notifications: React.FC = () => {
           )}
         </div>
 
-        <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2 mb-4">
+        <h1 className="text-xl font-bold text-foreground flex items-center gap-2 mb-4">
           <Bell className="w-6 h-6" />
           Thông báo
         </h1>
 
         {notifications.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-muted-foreground">
             <Bell className="w-12 h-12 mx-auto mb-3 text-gray-300" />
             <p>Không có thông báo nào</p>
           </div>
@@ -70,18 +70,18 @@ const Notifications: React.FC = () => {
               <button
                 key={notif.id}
                 onClick={() => handleClick(notif.id, notif.link)}
-                className={`w-full text-left bg-white rounded-xl shadow-sm p-4 transition-colors hover:bg-gray-50 ${
-                  !notif.read ? 'border-l-4 border-green-500' : ''
+                className={`w-full text-left bg-card rounded-xl shadow-card p-4 transition-colors hover:bg-background ${
+                  !notif.read ? 'border-l-4 border-primary' : ''
                 }`}
               >
                 <div className="flex items-start gap-3">
                   <span className="text-xl">{TYPE_ICONS[notif.type]}</span>
                   <div className="flex-1 min-w-0">
-                    <p className={`font-semibold ${notif.read ? 'text-gray-700' : 'text-gray-900'}`}>
+                    <p className={`font-semibold ${notif.read ? 'text-foreground' : 'text-foreground'}`}>
                       {notif.title}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">{notif.message}</p>
-                    <p className="text-xs text-gray-400 mt-2">{formatDate(notif.createdAt)}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{notif.message}</p>
+                    <p className="text-xs text-muted-foreground mt-2">{formatDate(notif.createdAt)}</p>
                   </div>
                 </div>
               </button>

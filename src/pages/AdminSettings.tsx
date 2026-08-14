@@ -120,14 +120,14 @@ const AdminSettings: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <SettingsIcon className="w-6 h-6 text-green-600" />
-          <h2 className="text-xl font-bold text-gray-900">Cài đặt hệ thống</h2>
+          <SettingsIcon className="w-6 h-6 text-primary" />
+          <h2 className="text-xl font-bold text-foreground">Cài đặt hệ thống</h2>
         </div>
         <div className="flex gap-2">
-          <button onClick={load} className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200">
+          <button onClick={load} className="p-2 bg-muted rounded-lg hover:bg-gray-200">
             <RefreshCw className="w-4 h-4" />
           </button>
-          <button onClick={() => setShowAdd(true)} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2">
+          <button onClick={() => setShowAdd(true)} className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary flex items-center gap-2">
             <Plus className="w-4 h-4" /> Thêm
           </button>
         </div>
@@ -143,19 +143,19 @@ const AdminSettings: React.FC = () => {
           description="Nhấn Thêm để tạo cài đặt mới (ID, value JSON, mô tả)."
         />
       ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-card rounded-xl shadow-card overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-left">
+            <thead className="bg-background text-left">
               <tr>
-                <th className="px-4 py-3 font-medium text-gray-700">ID</th>
-                <th className="px-4 py-3 font-medium text-gray-700">Giá trị</th>
-                <th className="px-4 py-3 font-medium text-gray-700">Mô tả</th>
-                <th className="px-4 py-3 font-medium text-gray-700 text-right">Thao tác</th>
+                <th className="px-4 py-3 font-medium text-foreground">ID</th>
+                <th className="px-4 py-3 font-medium text-foreground">Giá trị</th>
+                <th className="px-4 py-3 font-medium text-foreground">Mô tả</th>
+                <th className="px-4 py-3 font-medium text-foreground text-right">Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item) => (
-                <tr key={item.id} className="border-t hover:bg-gray-50">
+                <tr key={item.id} className="border-t hover:bg-background">
                   <td className="px-4 py-3 font-mono text-xs">{item.id}</td>
                   <td className="px-4 py-3">
                     {editing === item.id ? (
@@ -166,7 +166,7 @@ const AdminSettings: React.FC = () => {
                         rows={3}
                       />
                     ) : (
-                      <pre className="text-xs bg-gray-50 px-2 py-1 rounded max-w-xs overflow-auto">
+                      <pre className="text-xs bg-background px-2 py-1 rounded max-w-xs overflow-auto">
                         {typeof item.value === 'string' ? item.value : JSON.stringify(item.value)}
                       </pre>
                     )}
@@ -179,25 +179,25 @@ const AdminSettings: React.FC = () => {
                         className="w-full px-2 py-1 border rounded text-sm"
                       />
                     ) : (
-                      <span className="text-gray-600">{item.description || '—'}</span>
+                      <span className="text-muted-foreground">{item.description || '—'}</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     {editing === item.id ? (
                       <div className="flex justify-end gap-1">
-                        <button onClick={saveEdit} disabled={saving} className="p-1 text-green-600 hover:bg-green-50 rounded">
+                        <button onClick={saveEdit} disabled={saving} className="p-1 text-primary hover:bg-success-subtle rounded">
                           <Save className="w-4 h-4" />
                         </button>
-                        <button onClick={() => setEditing(null)} className="p-1 text-gray-600 hover:bg-gray-100 rounded">
+                        <button onClick={() => setEditing(null)} className="p-1 text-muted-foreground hover:bg-muted rounded">
                           <X className="w-4 h-4" />
                         </button>
                       </div>
                     ) : (
                       <div className="flex justify-end gap-1">
-                        <button onClick={() => startEdit(item)} className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                        <button onClick={() => startEdit(item)} className="p-1 text-info hover:bg-info-subtle rounded">
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button onClick={() => handleDelete(item.id)} className="p-1 text-red-600 hover:bg-red-50 rounded">
+                        <button onClick={() => handleDelete(item.id)} className="p-1 text-danger hover:bg-danger-subtle rounded">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
@@ -212,7 +212,7 @@ const AdminSettings: React.FC = () => {
 
       {showAdd && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+          <div className="bg-card rounded-xl p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-bold mb-4">Thêm cài đặt</h3>
             <div className="space-y-3">
               <div>
@@ -245,10 +245,10 @@ const AdminSettings: React.FC = () => {
               </div>
             </div>
             <div className="flex gap-2 mt-4">
-              <button onClick={handleAdd} disabled={saving} className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 disabled:opacity-50">
+              <button onClick={handleAdd} disabled={saving} className="flex-1 bg-primary text-white py-2 rounded-lg hover:bg-primary disabled:opacity-50">
                 {saving ? 'Đang lưu...' : 'Lưu'}
               </button>
-              <button onClick={() => setShowAdd(false)} className="flex-1 border py-2 rounded-lg hover:bg-gray-50">Hủy</button>
+              <button onClick={() => setShowAdd(false)} className="flex-1 border py-2 rounded-lg hover:bg-background">Hủy</button>
             </div>
           </div>
         </div>

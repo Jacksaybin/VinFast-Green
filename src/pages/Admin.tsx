@@ -525,7 +525,7 @@ const Admin: React.FC = () => {
   }, [activeModule, txPage, loadAllTransactions]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Header />
 
       <div className="px-4 py-4 pb-24">
@@ -533,7 +533,7 @@ const Admin: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Quay lại</span>
@@ -541,14 +541,14 @@ const Admin: React.FC = () => {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="p-2 text-gray-500 hover:text-green-600 disabled:opacity-50"
+            className="p-2 text-muted-foreground hover:text-primary disabled:opacity-50"
           >
             <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
-        <h1 className="text-xl font-bold text-gray-900 mb-1">Quản trị hệ thống</h1>
-        <p className="text-sm text-gray-500 mb-4">Xin chào, {user?.fullName}</p>
+        <h1 className="text-xl font-bold text-foreground mb-1">Quản trị hệ thống</h1>
+        <p className="text-sm text-muted-foreground mb-4">Xin chào, {user?.fullName}</p>
 
         {/* Mobile Nav */}
         <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2">
@@ -558,14 +558,14 @@ const Admin: React.FC = () => {
               onClick={() => setActiveModule(item.id)}
               className={`flex items-center gap-1 px-3 py-2 rounded-full text-xs whitespace-nowrap relative ${
                 activeModule === item.id
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white text-gray-600 border'
+                  ? 'bg-primary text-white'
+                  : 'bg-card text-muted-foreground border'
               }`}
             >
               <item.icon className="w-3 h-3" />
               {item.label}
               {item.id === 'chat' && chatUnread > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-danger-subtle0 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
                   {chatUnread > 9 ? '9+' : chatUnread}
                 </span>
               )}
@@ -578,43 +578,43 @@ const Admin: React.FC = () => {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: 'Tổng người dùng', value: adminStats.totalUsers.toLocaleString(), icon: Users, color: 'bg-blue-50 text-blue-600' },
-                { label: 'Tổng đầu tư', value: formatCurrency(adminStats.totalInvestment), icon: DollarSign, color: 'bg-green-50 text-green-600' },
-                { label: 'Nạp tiền chờ', value: adminStats.pendingDeposits, icon: CreditCard, color: 'bg-orange-50 text-orange-600' },
-                { label: 'Rút tiền chờ', value: adminStats.pendingWithdrawals, icon: Wallet, color: 'bg-red-50 text-red-600' },
+                { label: 'Tổng người dùng', value: adminStats.totalUsers.toLocaleString(), icon: Users, color: 'bg-info-subtle text-info' },
+                { label: 'Tổng đầu tư', value: formatCurrency(adminStats.totalInvestment), icon: DollarSign, color: 'bg-success-subtle text-primary' },
+                { label: 'Nạp tiền chờ', value: adminStats.pendingDeposits, icon: CreditCard, color: 'bg-warning-subtle text-warning-strong' },
+                { label: 'Rút tiền chờ', value: adminStats.pendingWithdrawals, icon: Wallet, color: 'bg-danger-subtle text-danger' },
               ].map((stat) => (
-                <div key={stat.label} className="bg-white rounded-xl p-4 shadow-sm">
+                <div key={stat.label} className="bg-card rounded-xl p-4 shadow-card">
                   <div className={`w-10 h-10 ${stat.color} rounded-full flex items-center justify-center mb-2`}>
                     <stat.icon className="w-5 h-5" />
                   </div>
-                  <div className="text-xs text-gray-500">{stat.label}</div>
-                  <div className="text-lg font-bold text-gray-900">{stat.value}</div>
+                  <div className="text-xs text-muted-foreground">{stat.label}</div>
+                  <div className="text-lg font-bold text-foreground">{stat.value}</div>
                 </div>
               ))}
             </div>
 
-            <div className="bg-white rounded-xl p-4 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-3">Giao dịch gần đây</h3>
+            <div className="bg-card rounded-xl p-4 shadow-card">
+              <h3 className="font-semibold text-foreground mb-3">Giao dịch gần đây</h3>
               {recentTransactions.map((tx) => (
                 <div key={tx.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-foreground">
                       {tx.type === 'deposit' ? 'Nạp tiền' : tx.type === 'withdraw' ? 'Rút tiền' : tx.type}
                     </p>
-                    <p className="text-xs text-gray-400">{tx.reference}</p>
+                    <p className="text-xs text-muted-foreground">{tx.reference}</p>
                   </div>
                   <div className="text-right">
-                    <p className={`text-sm font-bold ${tx.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>
+                    <p className={`text-sm font-bold ${tx.type === 'deposit' ? 'text-primary' : 'text-danger'}`}>
                       {tx.type === 'deposit' ? '+' : '-'}{formatCurrency(tx.amount)}
                     </p>
-                    <p className={`text-xs ${tx.status === 'completed' ? 'text-green-500' : 'text-orange-500'}`}>
+                    <p className={`text-xs ${tx.status === 'completed' ? 'text-green-500' : 'text-warning-strong'}`}>
                       {tx.status === 'completed' ? 'Hoàn thành' : 'Chờ duyệt'}
                     </p>
                   </div>
                 </div>
               ))}
               {recentTransactions.length === 0 && (
-                <p className="text-center text-gray-400 py-4 text-sm">Chưa có giao dịch nào</p>
+                <p className="text-center text-muted-foreground py-4 text-sm">Chưa có giao dịch nào</p>
               )}
             </div>
           </div>
@@ -623,45 +623,45 @@ const Admin: React.FC = () => {
         {/* Deposits */}
         {activeModule === 'deposits' && (
           <div className="space-y-4">
-            <div className="bg-white rounded-xl p-4 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-4">Yêu cầu nạp tiền</h3>
+            <div className="bg-card rounded-xl p-4 shadow-card">
+              <h3 className="font-semibold text-foreground mb-4">Yêu cầu nạp tiền</h3>
               {pendingDeposits.length === 0 ? (
                 <div className="text-center py-8">
                   <CreditCard className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500 text-sm">Không có yêu cầu nạp tiền nào</p>
+                  <p className="text-muted-foreground text-sm">Không có yêu cầu nạp tiền nào</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {pendingDeposits.map((tx) => (
-                    <div key={tx.id} className="border border-gray-100 rounded-lg p-4">
+                    <div key={tx.id} className="border border-border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <p className="font-semibold text-gray-900">{(tx as any).full_name || tx.userId}</p>
-                          <p className="text-xs text-gray-500">{(tx as any).phone || ''}</p>
+                          <p className="font-semibold text-foreground">{(tx as any).full_name || tx.userId}</p>
+                          <p className="text-xs text-muted-foreground">{(tx as any).phone || ''}</p>
                         </div>
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">{tx.reference}</span>
+                        <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded">{tx.reference}</span>
                       </div>
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <p className="text-xs text-gray-500">Số tiền nạp</p>
-                          <p className="text-lg font-bold text-green-600">{formatCurrency(parseFloat(tx.amount))}</p>
+                          <p className="text-xs text-muted-foreground">Số tiền nạp</p>
+                          <p className="text-lg font-bold text-primary">{formatCurrency(parseFloat(tx.amount))}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-gray-400">{tx.created_at ? new Date(tx.created_at).toLocaleString('vi-VN') : ''}</p>
+                          <p className="text-xs text-muted-foreground">{tx.created_at ? new Date(tx.created_at).toLocaleString('vi-VN') : ''}</p>
                         </div>
                       </div>
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleApproveDeposit(tx.id)}
                           disabled={loading}
-                          className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-1"
+                          className="flex-1 bg-primary text-white py-2 rounded-lg text-sm font-medium hover:bg-primary disabled:opacity-50 flex items-center justify-center gap-1"
                         >
                           <Check className="w-4 h-4" /> Duyệt
                         </button>
                         <button
                           onClick={() => handleRejectDeposit(tx.id)}
                           disabled={loading}
-                          className="flex-1 bg-red-50 text-red-600 py-2 rounded-lg text-sm font-medium hover:bg-red-100 disabled:opacity-50 flex items-center justify-center gap-1"
+                          className="flex-1 bg-danger-subtle text-danger py-2 rounded-lg text-sm font-medium hover:bg-danger-subtle disabled:opacity-50 flex items-center justify-center gap-1"
                         >
                           <X className="w-4 h-4" /> Từ chối
                         </button>
@@ -677,45 +677,45 @@ const Admin: React.FC = () => {
         {/* Withdrawals */}
         {activeModule === 'withdrawals' && (
           <div className="space-y-4">
-            <div className="bg-white rounded-xl p-4 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-4">Yêu cầu rút tiền</h3>
+            <div className="bg-card rounded-xl p-4 shadow-card">
+              <h3 className="font-semibold text-foreground mb-4">Yêu cầu rút tiền</h3>
               {pendingWithdrawals.length === 0 ? (
                 <div className="text-center py-8">
                   <Wallet className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500 text-sm">Không có yêu cầu rút tiền nào</p>
+                  <p className="text-muted-foreground text-sm">Không có yêu cầu rút tiền nào</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {pendingWithdrawals.map((tx) => (
-                    <div key={tx.id} className="border border-gray-100 rounded-lg p-4">
+                    <div key={tx.id} className="border border-border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <p className="font-semibold text-gray-900">{(tx as any).full_name || tx.userId}</p>
-                          <p className="text-xs text-gray-500">{(tx as any).phone || ''}</p>
+                          <p className="font-semibold text-foreground">{(tx as any).full_name || tx.userId}</p>
+                          <p className="text-xs text-muted-foreground">{(tx as any).phone || ''}</p>
                         </div>
-                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">{tx.reference}</span>
+                        <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded">{tx.reference}</span>
                       </div>
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <p className="text-xs text-gray-500">Số tiền rút</p>
-                          <p className="text-lg font-bold text-red-600">{formatCurrency(parseFloat(tx.amount))}</p>
+                          <p className="text-xs text-muted-foreground">Số tiền rút</p>
+                          <p className="text-lg font-bold text-danger">{formatCurrency(parseFloat(tx.amount))}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-gray-400">{tx.created_at ? new Date(tx.created_at).toLocaleString('vi-VN') : ''}</p>
+                          <p className="text-xs text-muted-foreground">{tx.created_at ? new Date(tx.created_at).toLocaleString('vi-VN') : ''}</p>
                         </div>
                       </div>
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleApproveWithdraw(tx.id)}
                           disabled={loading}
-                          className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-1"
+                          className="flex-1 bg-primary text-white py-2 rounded-lg text-sm font-medium hover:bg-primary disabled:opacity-50 flex items-center justify-center gap-1"
                         >
                           <Check className="w-4 h-4" /> Duyệt
                         </button>
                         <button
                           onClick={() => handleRejectWithdraw(tx.id)}
                           disabled={loading}
-                          className="flex-1 bg-red-50 text-red-600 py-2 rounded-lg text-sm font-medium hover:bg-red-100 disabled:opacity-50 flex items-center justify-center gap-1"
+                          className="flex-1 bg-danger-subtle text-danger py-2 rounded-lg text-sm font-medium hover:bg-danger-subtle disabled:opacity-50 flex items-center justify-center gap-1"
                         >
                           <X className="w-4 h-4" /> Từ chối
                         </button>
@@ -731,8 +731,8 @@ const Admin: React.FC = () => {
         {/* Users */}
         {activeModule === 'users' && (
           <div className="space-y-4">
-            <div className="bg-white rounded-xl p-4 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-4">
+            <div className="bg-card rounded-xl p-4 shadow-card">
+              <h3 className="font-semibold text-foreground mb-4">
                 Người dùng {userTotal > 0 && `(${userTotal})`}
               </h3>
 
@@ -743,11 +743,11 @@ const Admin: React.FC = () => {
                   value={userSearchInput}
                   onChange={(e) => setUserSearchInput(e.target.value)}
                   placeholder="Tìm theo tên hoặc số điện thoại..."
-                  className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700"
+                  className="px-4 py-2 bg-primary text-white rounded-lg text-sm hover:bg-primary"
                 >
                   <Search className="w-4 h-4" />
                 </button>
@@ -757,30 +757,30 @@ const Admin: React.FC = () => {
               {users.length === 0 ? (
                 <div className="text-center py-8">
                   <Users className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500 text-sm">Không tìm thấy người dùng</p>
+                  <p className="text-muted-foreground text-sm">Không tìm thấy người dùng</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {users.map((u) => (
-                    <div key={u.id} className="border border-gray-100 rounded-lg p-4">
+                    <div key={u.id} className="border border-border rounded-lg p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <User className="w-5 h-5 text-gray-500" />
+                          <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
+                            <User className="w-5 h-5 text-muted-foreground" />
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-gray-900 text-sm truncate">{u.fullName || '—'}</p>
-                            <p className="text-xs text-gray-500">{u.phone}</p>
-                            <p className="text-xs text-gray-400">
+                            <p className="font-medium text-foreground text-sm truncate">{u.fullName || '—'}</p>
+                            <p className="text-xs text-muted-foreground">{u.phone}</p>
+                            <p className="text-xs text-muted-foreground">
                               {u.createdAt ? new Date(u.createdAt).toLocaleDateString('vi-VN') : ''} · {u.referralCode || ''}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                           <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                            u.status === 'active' ? 'bg-green-100 text-green-700' :
-                            u.status === 'suspended' ? 'bg-red-100 text-red-700' :
-                            'bg-gray-100 text-gray-600'
+                            u.status === 'active' ? 'bg-success-subtle text-primary' :
+                            u.status === 'suspended' ? 'bg-danger-subtle text-danger-strong' :
+                            'bg-muted text-muted-foreground'
                           }`}>
                             {u.status === 'active' ? 'Hoạt động' : u.status === 'suspended' ? 'Bị khóa' : u.status}
                           </span>
@@ -795,7 +795,7 @@ const Admin: React.FC = () => {
                             setAdjustError('');
                             setAdjustSuccess('');
                           }}
-                          className="flex-1 text-xs bg-blue-50 text-blue-600 py-1.5 rounded-lg hover:bg-blue-100 flex items-center justify-center gap-1"
+                          className="flex-1 text-xs bg-info-subtle text-info py-1.5 rounded-lg hover:bg-info-subtle flex items-center justify-center gap-1"
                         >
                           <DollarSign className="w-3 h-3" /> Điều chỉnh số dư
                         </button>
@@ -804,8 +804,8 @@ const Admin: React.FC = () => {
                           disabled={loading}
                           className={`text-xs py-1.5 px-3 rounded-lg flex items-center gap-1 disabled:opacity-50 ${
                             u.status === 'active'
-                              ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                              : 'bg-green-50 text-green-600 hover:bg-green-100'
+                              ? 'bg-danger-subtle text-danger hover:bg-danger-subtle'
+                              : 'bg-success-subtle text-primary hover:bg-success-subtle'
                           }`}
                         >
                           {u.status === 'active' ? (
@@ -830,7 +830,7 @@ const Admin: React.FC = () => {
                   >
                     ←
                   </button>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-muted-foreground">
                     Trang {userPage} / {Math.ceil(userTotal / 20)}
                   </span>
                   <button
@@ -847,11 +847,11 @@ const Admin: React.FC = () => {
             {/* Balance adjust modal */}
             {selectedUser && (
               <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-                <div className="bg-white rounded-xl p-5 w-full max-w-sm">
-                  <h4 className="font-semibold text-gray-900 mb-1">
+                <div className="bg-card rounded-xl p-5 w-full max-w-sm">
+                  <h4 className="font-semibold text-foreground mb-1">
                     Điều chỉnh số dư
                   </h4>
-                  <p className="text-sm text-gray-500 mb-4">
+                  <p className="text-sm text-muted-foreground mb-4">
                     {selectedUser.fullName || selectedUser.phone}
                   </p>
 
@@ -863,9 +863,9 @@ const Admin: React.FC = () => {
                         className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
                           adjustAction === action
                             ? action === 'add'
-                              ? 'bg-green-600 text-white'
-                              : 'bg-red-600 text-white'
-                            : 'bg-gray-100 text-gray-600'
+                              ? 'bg-primary text-white'
+                              : 'bg-danger text-white'
+                            : 'bg-muted text-muted-foreground'
                         }`}
                       >
                         {action === 'add' ? '+ Cộng tiền' : '− Trừ tiền'}
@@ -881,7 +881,7 @@ const Admin: React.FC = () => {
                     min="1000"
                     max="50000000"
                     step="1000"
-                    className="w-full px-3 py-2 border rounded-lg text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full px-3 py-2 border rounded-lg text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-primary"
                   />
 
                   <textarea
@@ -891,15 +891,15 @@ const Admin: React.FC = () => {
                     rows={2}
                     minLength={10}
                     maxLength={500}
-                    className="w-full px-3 py-2 border rounded-lg text-sm mb-1 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                    className="w-full px-3 py-2 border rounded-lg text-sm mb-1 focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                   />
-                  <p className="text-[10px] text-gray-400 mb-3 text-right">
+                  <p className="text-[10px] text-muted-foreground mb-3 text-right">
                     {adjustNote.trim().length}/500 · tối thiểu 10 ký tự
                   </p>
 
                   {parseFloat(adjustAmount) >= 10_000_000 && (
-                    <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-2 mb-3">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex items-start gap-2 bg-warning-subtle border border-amber-200 rounded-lg p-2 mb-3">
+                      <AlertTriangle className="w-4 h-4 text-warning-strong flex-shrink-0 mt-0.5" />
                       <p className="text-xs text-amber-800">
                         Số tiền ≥ 10 triệu — bạn sẽ cần nhập cụm từ xác nhận ở bước tiếp theo.
                       </p>
@@ -907,10 +907,10 @@ const Admin: React.FC = () => {
                   )}
 
                   {adjustError && (
-                    <p className="text-red-600 text-sm mb-2">{adjustError}</p>
+                    <p className="text-danger text-sm mb-2">{adjustError}</p>
                   )}
                   {adjustSuccess && (
-                    <p className="text-green-600 text-sm mb-2">{adjustSuccess}</p>
+                    <p className="text-primary text-sm mb-2">{adjustSuccess}</p>
                   )}
 
                   <div className="flex gap-2">
@@ -923,7 +923,7 @@ const Admin: React.FC = () => {
                     <button
                       onClick={openAdjustModal}
                       disabled={adjustLoading || !adjustAmount || adjustNote.trim().length < 10}
-                      className="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50"
+                      className="flex-1 py-2 bg-primary text-white rounded-lg text-sm hover:bg-primary disabled:opacity-50"
                     >
                       {adjustLoading ? 'Đang xử lý...' : 'Xác nhận'}
                     </button>
@@ -937,43 +937,43 @@ const Admin: React.FC = () => {
         {/* Packages */}
         {activeModule === 'packages' && (
           <div className="space-y-4">
-            <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="bg-card rounded-xl p-4 shadow-card">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900">Gói đầu tư</h3>
+                <h3 className="font-semibold text-foreground">Gói đầu tư</h3>
               </div>
               {packages.length === 0 ? (
                 <div className="text-center py-8">
                   <Package className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500 text-sm">Không có gói nào</p>
+                  <p className="text-muted-foreground text-sm">Không có gói nào</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {packages.map((pkg) => (
-                    <div key={pkg.id} className="border border-gray-100 rounded-lg p-4">
+                    <div key={pkg.id} className="border border-border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
                         <div>
-                          <p className="font-semibold text-gray-900">{pkg.name}</p>
-                          <p className="text-xs text-gray-500">Mã: {pkg.code}</p>
+                          <p className="font-semibold text-foreground">{pkg.name}</p>
+                          <p className="text-xs text-muted-foreground">Mã: {pkg.code}</p>
                         </div>
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                          pkg.status === 'active' ? 'bg-green-100 text-green-700' :
-                          pkg.status === 'inactive' ? 'bg-gray-100 text-gray-500' :
-                          'bg-red-100 text-red-700'
+                          pkg.status === 'active' ? 'bg-success-subtle text-primary' :
+                          pkg.status === 'inactive' ? 'bg-muted text-muted-foreground' :
+                          'bg-danger-subtle text-danger-strong'
                         }`}>
                           {pkg.status === 'active' ? 'Hoạt động' : pkg.status === 'inactive' ? 'Tạm dừng' : pkg.status}
                         </span>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 text-xs text-gray-600 mb-3">
+                      <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground mb-3">
                         <div>
-                          <p className="text-gray-400">Min</p>
+                          <p className="text-muted-foreground">Min</p>
                           <p className="font-medium">{formatCurrency(pkg.min_amount || pkg.minAmount || 0)}</p>
                         </div>
                         <div>
-                          <p className="text-gray-400">Lợi nhuận/ngày</p>
-                          <p className="font-medium text-green-600">{pkg.daily_profit || pkg.dailyProfit || 0}%</p>
+                          <p className="text-muted-foreground">Lợi nhuận/ngày</p>
+                          <p className="font-medium text-primary">{pkg.daily_profit || pkg.dailyProfit || 0}%</p>
                         </div>
                         <div>
-                          <p className="text-gray-400">Kỳ hạn</p>
+                          <p className="text-muted-foreground">Kỳ hạn</p>
                           <p className="font-medium">{pkg.period || 0} ngày</p>
                         </div>
                       </div>
@@ -988,12 +988,12 @@ const Admin: React.FC = () => {
         {/* News Management */}
         {activeModule === 'news' && (
           <div className="space-y-4">
-            <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="bg-card rounded-xl p-4 shadow-card">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900">Tin tức {newsTotal > 0 && `(${newsTotal})`}</h3>
+                <h3 className="font-semibold text-foreground">Tin tức {newsTotal > 0 && `(${newsTotal})`}</h3>
                 <button
                   onClick={() => openEditNews()}
-                  className="flex items-center gap-1 text-sm bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700"
+                  className="flex items-center gap-1 text-sm bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary"
                 >
                   <Plus className="w-3.5 h-3.5" /> Viết bài
                 </button>
@@ -1001,25 +1001,25 @@ const Admin: React.FC = () => {
               {newsList.length === 0 ? (
                 <div className="text-center py-8">
                   <FileText className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500 text-sm">Chưa có bài viết nào</p>
+                  <p className="text-muted-foreground text-sm">Chưa có bài viết nào</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {newsList.map((item) => (
-                    <div key={item.id} className="border border-gray-100 rounded-lg p-4">
+                    <div key={item.id} className="border border-border rounded-lg p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-gray-900 text-sm truncate">{item.title}</p>
-                          <p className="text-xs text-gray-500 truncate">{item.slug}</p>
+                          <p className="font-medium text-foreground text-sm truncate">{item.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">{item.slug}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className={`text-xs px-2 py-0.5 rounded-full ${
-                              item.status === 'published' ? 'bg-green-100 text-green-700' :
-                              'bg-gray-100 text-gray-500'
+                              item.status === 'published' ? 'bg-success-subtle text-primary' :
+                              'bg-muted text-muted-foreground'
                             }`}>
                               {item.status === 'published' ? 'Đã đăng' : 'Bản nháp'}
                             </span>
-                            <span className="text-xs text-gray-400">{item.category}</span>
-                            <span className="text-xs text-gray-400">
+                            <span className="text-xs text-muted-foreground">{item.category}</span>
+                            <span className="text-xs text-muted-foreground">
                               {item.created_at ? new Date(item.created_at).toLocaleDateString('vi-VN') : ''}
                             </span>
                           </div>
@@ -1027,13 +1027,13 @@ const Admin: React.FC = () => {
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <button
                             onClick={() => openEditNews(item)}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"
+                            className="p-1.5 text-info hover:bg-info-subtle rounded"
                           >
                             <Paintbrush className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDeleteNews(item.id)}
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded"
+                            className="p-1.5 text-danger hover:bg-danger-subtle rounded"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1047,7 +1047,7 @@ const Admin: React.FC = () => {
                 <div className="flex items-center justify-center gap-2 mt-4">
                   <button onClick={() => setNewsPage((p) => Math.max(1, p - 1))} disabled={newsPage === 1}
                     className="px-3 py-1 border rounded text-sm disabled:opacity-40">←</button>
-                  <span className="text-sm text-gray-500">Trang {newsPage} / {Math.ceil(newsTotal / 20)}</span>
+                  <span className="text-sm text-muted-foreground">Trang {newsPage} / {Math.ceil(newsTotal / 20)}</span>
                   <button onClick={() => setNewsPage((p) => p + 1)} disabled={newsPage >= Math.ceil(newsTotal / 20)}
                     className="px-3 py-1 border rounded text-sm disabled:opacity-40">→</button>
                 </div>
@@ -1057,8 +1057,8 @@ const Admin: React.FC = () => {
             {/* News editor modal */}
             {editingNews !== undefined && (
               <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4 overflow-y-auto py-8">
-                <div className="bg-white rounded-xl p-5 w-full max-w-md">
-                  <h4 className="font-semibold text-gray-900 mb-4">
+                <div className="bg-card rounded-xl p-5 w-full max-w-md">
+                  <h4 className="font-semibold text-foreground mb-4">
                     {editingNews ? 'Sửa bài viết' : 'Viết bài mới'}
                   </h4>
                   <div className="space-y-3">
@@ -1067,27 +1067,27 @@ const Admin: React.FC = () => {
                       value={newsForm.title}
                       onChange={(e) => setNewsForm({ ...newsForm, title: e.target.value })}
                       placeholder="Tiêu đề"
-                      className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     <input
                       type="text"
                       value={newsForm.slug}
                       onChange={(e) => setNewsForm({ ...newsForm, slug: e.target.value })}
                       placeholder="Slug (tự động nếu trống)"
-                      className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                     <textarea
                       value={newsForm.content}
                       onChange={(e) => setNewsForm({ ...newsForm, content: e.target.value })}
                       placeholder="Nội dung bài viết"
                       rows={6}
-                      className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                      className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                     />
                     <div className="flex gap-2">
                       <select
                         value={newsForm.category}
                         onChange={(e) => setNewsForm({ ...newsForm, category: e.target.value })}
-                        className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       >
                         <option value="news">Tin tức</option>
                         <option value="promotion">Khuyến mãi</option>
@@ -1096,7 +1096,7 @@ const Admin: React.FC = () => {
                       <select
                         value={newsForm.status}
                         onChange={(e) => setNewsForm({ ...newsForm, status: e.target.value })}
-                        className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       >
                         <option value="published">Đăng ngay</option>
                         <option value="draft">Bản nháp</option>
@@ -1107,7 +1107,7 @@ const Admin: React.FC = () => {
                       value={newsForm.imageUrl}
                       onChange={(e) => setNewsForm({ ...newsForm, imageUrl: e.target.value })}
                       placeholder="URL ảnh (tùy chọn)"
-                      className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                   <div className="flex gap-2 mt-4">
@@ -1120,7 +1120,7 @@ const Admin: React.FC = () => {
                     <button
                       onClick={handleSaveNews}
                       disabled={newsLoading || !newsForm.title || !newsForm.content}
-                      className="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50"
+                      className="flex-1 py-2 bg-primary text-white rounded-lg text-sm hover:bg-primary disabled:opacity-50"
                     >
                       {newsLoading ? 'Đang lưu...' : 'Lưu bài viết'}
                     </button>
@@ -1133,12 +1133,12 @@ const Admin: React.FC = () => {
 
         {/* Transactions */}
         {activeModule === 'transactions' && (
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <h3 className="font-semibold text-gray-900 mb-4">Tất cả giao dịch {txTotal > 0 && `(${txTotal})`}</h3>
+          <div className="bg-card rounded-xl p-4 shadow-card">
+            <h3 className="font-semibold text-foreground mb-4">Tất cả giao dịch {txTotal > 0 && `(${txTotal})`}</h3>
             {allTransactions.length === 0 ? (
               <div className="text-center py-8">
                 <DollarSign className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">Chưa có giao dịch nào</p>
+                <p className="text-muted-foreground text-sm">Chưa có giao dịch nào</p>
               </div>
             ) : (
               <>
@@ -1148,32 +1148,32 @@ const Admin: React.FC = () => {
                     return (
                     <div key={tx.id} className="flex items-start justify-between py-2 border-b border-gray-50 last:border-0 gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-medium text-foreground">
                           {tx.type === 'deposit' ? 'Nạp tiền' : tx.type === 'withdraw' ? 'Rút tiền' : tx.type}
                         </p>
-                        <p className="text-xs text-gray-400">{tx.reference}</p>
-                        <p className="text-xs text-gray-500 truncate">
+                        <p className="text-xs text-muted-foreground">{tx.reference}</p>
+                        <p className="text-xs text-muted-foreground truncate">
                           {(tx as any).full_name || (tx as any).phone || ''}
                         </p>
                         {reason && (
-                          <p className="text-xs text-gray-500 mt-1 italic line-clamp-2" title={reason}>
-                            <span className="text-gray-400">Lý do:</span> {reason}
+                          <p className="text-xs text-muted-foreground mt-1 italic line-clamp-2" title={reason}>
+                            <span className="text-muted-foreground">Lý do:</span> {reason}
                           </p>
                         )}
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className={`text-sm font-bold ${tx.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>
+                        <p className={`text-sm font-bold ${tx.type === 'deposit' ? 'text-primary' : 'text-danger'}`}>
                           {tx.type === 'deposit' ? '+' : '-'}{formatCurrency(tx.amount)}
                         </p>
                         <span className={`text-xs px-1.5 py-0.5 rounded ${
-                          tx.status === 'completed' ? 'bg-green-100 text-green-700' :
-                          tx.status === 'pending' ? 'bg-orange-100 text-orange-700' :
-                          'bg-red-100 text-red-700'
+                          tx.status === 'completed' ? 'bg-success-subtle text-primary' :
+                          tx.status === 'pending' ? 'bg-warning-subtle text-orange-700' :
+                          'bg-danger-subtle text-danger-strong'
                         }`}>
                           {tx.status === 'completed' ? 'Hoàn thành' : tx.status === 'pending' ? 'Chờ duyệt' : 'Thất bại'}
                         </span>
                         {tx.processed_at && (
-                          <p className="text-[10px] text-gray-400 mt-1">
+                          <p className="text-[10px] text-muted-foreground mt-1">
                             {new Date(tx.processed_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
                           </p>
                         )}
@@ -1191,7 +1191,7 @@ const Admin: React.FC = () => {
                     >
                       ←
                     </button>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-muted-foreground">
                       Trang {txPage} / {Math.ceil(txTotal / 20)}
                     </span>
                     <button
@@ -1212,9 +1212,9 @@ const Admin: React.FC = () => {
         {activeModule === 'chat' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">Hỗ trợ khách hàng</h3>
+              <h3 className="font-semibold text-foreground">Hỗ trợ khách hàng</h3>
               {chatUnread > 0 && (
-                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
+                <span className="text-xs bg-danger-subtle text-danger-strong px-2 py-1 rounded-full font-medium">
                   {chatUnread} tin chưa đọc
                 </span>
               )}
@@ -1222,11 +1222,11 @@ const Admin: React.FC = () => {
 
             {/* Conversation list */}
             {!activeChat && (
-              <div className="bg-white rounded-xl p-4 shadow-sm">
+              <div className="bg-card rounded-xl p-4 shadow-card">
                 {chatConversations.length === 0 ? (
                   <div className="text-center py-8">
                     <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500 text-sm">Chưa có cuộc hội thoại nào</p>
+                    <p className="text-muted-foreground text-sm">Chưa có cuộc hội thoại nào</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -1234,35 +1234,35 @@ const Admin: React.FC = () => {
                       <div
                         key={conv.id}
                         onClick={() => handleSelectConversation(conv.id)}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-background cursor-pointer"
                       >
                         <div className="flex items-center space-x-3 min-w-0">
-                          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <User className="w-5 h-5 text-green-600" />
+                          <div className="w-10 h-10 bg-success-subtle rounded-full flex items-center justify-center flex-shrink-0">
+                            <User className="w-5 h-5 text-primary" />
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-gray-900 text-sm truncate">
+                            <p className="font-medium text-foreground text-sm truncate">
                               {conv.user_full_name || conv.user_name || 'Khách'}{' '}
-                              <span className="text-xs text-gray-400">{conv.user_phone || ''}</span>
+                              <span className="text-xs text-muted-foreground">{conv.user_phone || ''}</span>
                             </p>
-                            <p className="text-xs text-gray-500 truncate">{conv.last_message || 'Cuộc hội thoại mới'}</p>
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-muted-foreground truncate">{conv.last_message || 'Cuộc hội thoại mới'}</p>
+                            <p className="text-xs text-muted-foreground">
                               {conv.last_message_at ? new Date(conv.last_message_at).toLocaleString('vi-VN') : new Date(conv.created_at).toLocaleString('vi-VN')}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2 flex-shrink-0">
                           <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            conv.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                            conv.status === 'open' ? 'bg-success-subtle text-primary' : 'bg-muted text-muted-foreground'
                           }`}>
                             {conv.status === 'open' ? 'Mở' : 'Đóng'}
                           </span>
                           {conv.unread_count > 0 && (
-                            <span className="bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center">
+                            <span className="bg-danger-subtle0 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center">
                               {conv.unread_count}
                             </span>
                           )}
-                          <ChevronRight className="w-4 h-4 text-gray-400" />
+                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
                         </div>
                       </div>
                     ))}
@@ -1273,9 +1273,9 @@ const Admin: React.FC = () => {
 
             {/* Chat detail */}
             {activeChat && (
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div className="bg-card rounded-xl shadow-card overflow-hidden">
                 {/* Chat header */}
-                <div className="bg-gradient-to-r from-green-600 to-green-700 p-4 text-white flex items-center justify-between">
+                <div className="bg-gradient-to-r from-brand-primary-600 to-brand-primary-700 p-4 text-white flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <button onClick={() => setActiveChat(null)} className="text-white">
                       <ArrowLeft className="w-5 h-5" />
@@ -1285,33 +1285,33 @@ const Admin: React.FC = () => {
                         {chatConversations.find(c => c.id === activeChat)?.user_full_name ||
                          chatConversations.find(c => c.id === activeChat)?.user_name || 'Khách'}
                       </p>
-                      <p className="text-xs text-green-100">
+                      <p className="text-xs text-primary-foreground">
                         {chatConversations.find(c => c.id === activeChat)?.user_phone || ''}
                       </p>
                     </div>
                   </div>
                   <button
                     onClick={() => handleCloseConversation(activeChat)}
-                    className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
+                    className="text-xs bg-card/20 hover:bg-card/30 px-2 py-1 rounded"
                   >
                     Đóng hội thoại
                   </button>
                 </div>
 
                 {/* Messages */}
-                <div className="p-4 bg-gray-50 h-80 overflow-y-auto space-y-3">
+                <div className="p-4 bg-background h-80 overflow-y-auto space-y-3">
                   {chatMessages.length === 0 && (
-                    <p className="text-center text-gray-400 text-sm py-8">Chưa có tin nhắn</p>
+                    <p className="text-center text-muted-foreground text-sm py-8">Chưa có tin nhắn</p>
                   )}
                   {chatMessages.map((msg) => (
                     <div key={msg.id} className={`flex ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${
                         msg.sender === 'admin'
-                          ? 'bg-green-600 text-white rounded-br-md'
-                          : 'bg-white text-gray-800 border rounded-bl-md'
+                          ? 'bg-primary text-white rounded-br-md'
+                          : 'bg-card text-foreground border rounded-bl-md'
                       }`}>
                         <p className="break-words">{msg.text}</p>
-                        <p className={`text-[10px] mt-1 ${msg.sender === 'admin' ? 'text-green-100' : 'text-gray-400'}`}>
+                        <p className={`text-[10px] mt-1 ${msg.sender === 'admin' ? 'text-primary-foreground' : 'text-muted-foreground'}`}>
                           {new Date(msg.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                         </p>
                       </div>
@@ -1320,19 +1320,19 @@ const Admin: React.FC = () => {
                 </div>
 
                 {/* Reply input */}
-                <div className="p-4 bg-white border-t flex items-center space-x-2">
+                <div className="p-4 bg-card border-t flex items-center space-x-2">
                   <input
                     type="text"
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAdminReply()}
                     placeholder="Nhập câu trả lời..."
-                    className="flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                    className="flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-primary text-sm"
                   />
                   <button
                     onClick={handleAdminReply}
                     disabled={!replyText.trim()}
-                    className="w-9 h-9 bg-green-600 text-white rounded-full flex items-center justify-center hover:bg-green-700 disabled:opacity-50"
+                    className="w-9 h-9 bg-primary text-white rounded-full flex items-center justify-center hover:bg-primary disabled:opacity-50"
                   >
                     <Send className="w-4 h-4" />
                   </button>
@@ -1400,7 +1400,7 @@ const Admin: React.FC = () => {
 
       {/* Toast error nổi (ngoài modal) */}
       {modalError && !actionModal.open && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-red-600 text-white text-sm px-4 py-2 rounded-full shadow-lg z-40">
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-danger text-white text-sm px-4 py-2 rounded-full shadow-elevated z-40">
           {modalError}
           <button onClick={() => setModalError('')} className="ml-2 font-bold">×</button>
         </div>

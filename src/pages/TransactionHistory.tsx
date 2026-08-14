@@ -25,10 +25,10 @@ const TYPE_LABELS: Record<TransactionType, string> = {
 };
 
 const STATUS_LABELS: Record<TransactionStatus, { label: string; className: string }> = {
-  pending: { label: 'Chờ duyệt', className: 'bg-orange-100 text-orange-700' },
-  completed: { label: 'Hoàn thành', className: 'bg-green-100 text-green-700' },
-  failed: { label: 'Thất bại', className: 'bg-red-100 text-red-700' },
-  cancelled: { label: 'Đã hủy', className: 'bg-gray-100 text-gray-700' },
+  pending: { label: 'Chờ duyệt', className: 'bg-warning-subtle text-orange-700' },
+  completed: { label: 'Hoàn thành', className: 'bg-success-subtle text-primary' },
+  failed: { label: 'Thất bại', className: 'bg-danger-subtle text-danger-strong' },
+  cancelled: { label: 'Đã hủy', className: 'bg-muted text-foreground' },
 };
 
 const TransactionHistory: React.FC = () => {
@@ -60,14 +60,14 @@ const TransactionHistory: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Header />
 
       <div className="px-4 py-4 pb-24">
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => navigate('/my-account')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Quay lại</span>
@@ -75,22 +75,22 @@ const TransactionHistory: React.FC = () => {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="p-2 text-gray-500 hover:text-green-600 disabled:opacity-50"
+            className="p-2 text-muted-foreground hover:text-primary disabled:opacity-50"
           >
             <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
-        <h1 className="text-xl font-bold text-gray-900 mb-4">Lịch sử giao dịch</h1>
+        <h1 className="text-xl font-bold text-foreground mb-4">Lịch sử giao dịch</h1>
 
         <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2">
-          <Filter className="w-4 h-4 text-gray-500 flex-shrink-0" />
+          <Filter className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           {(['all', 'deposit', 'withdraw', 'investment', 'profit'] as const).map((type) => (
             <button
               key={type}
               onClick={() => setFilter(type)}
               className={`px-3 py-1 rounded-full text-xs whitespace-nowrap ${
-                filter === type ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border'
+                filter === type ? 'bg-primary text-white' : 'bg-card text-muted-foreground border'
               }`}
             >
               {type === 'all' ? 'Tất cả' : TYPE_LABELS[type as TransactionType] || type}
@@ -99,39 +99,39 @@ const TransactionHistory: React.FC = () => {
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-muted-foreground">
             <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
             <p>Đang tải...</p>
           </div>
         ) : filteredTransactions.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-muted-foreground">
             <p>Chưa có giao dịch nào</p>
           </div>
         ) : (
           <div className="space-y-3">
             {filteredTransactions.map((tx) => (
-              <div key={tx.id} className="bg-white rounded-xl shadow-sm p-4">
+              <div key={tx.id} className="bg-card rounded-xl shadow-card p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-foreground">
                       {TYPE_LABELS[tx.type] || tx.type}
                     </p>
-                    <p className="text-xs text-gray-500">{tx.reference}</p>
+                    <p className="text-xs text-muted-foreground">{tx.reference}</p>
                   </div>
                   <span className={`px-2 py-0.5 text-xs rounded-full ${STATUS_LABELS[tx.status]?.className || ''}`}>
                     {STATUS_LABELS[tx.status]?.label || tx.status}
                   </span>
                 </div>
                 {tx.description && (
-                  <p className="text-sm text-gray-600 mb-2">{tx.description}</p>
+                  <p className="text-sm text-muted-foreground mb-2">{tx.description}</p>
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">{formatDate(tx.createdAt)}</span>
+                  <span className="text-xs text-muted-foreground">{formatDate(tx.createdAt)}</span>
                   <span
                     className={`font-bold ${
                       ['withdraw', 'investment', 'admin_debit'].includes(tx.type)
-                        ? 'text-red-600'
-                        : 'text-green-600'
+                        ? 'text-danger'
+                        : 'text-primary'
                     }`}
                   >
                     {['withdraw', 'investment', 'admin_debit'].includes(tx.type) ? '-' : '+'}

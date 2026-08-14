@@ -28,13 +28,13 @@ const InvestmentOverview: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-4">
+    <div className="bg-card rounded-xl shadow-sm p-4">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-          <TrendingUp className="w-5 h-5 text-green-600 mr-2" />
+        <h3 className="text-lg font-semibold text-foreground flex items-center">
+          <TrendingUp className="w-5 h-5 text-primary mr-2" />
           Gói đầu tư nổi bật
         </h3>
-        <button className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center">
+        <button className="text-info hover:text-blue-700 text-sm font-medium flex items-center">
           <Eye className="w-4 h-4 mr-1" />
           Xem tất cả
         </button>
@@ -42,13 +42,13 @@ const InvestmentOverview: React.FC = () => {
 
       <div className="space-y-3">
         {investments.map((investment) => (
-          <div key={investment.id} className="p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+          <div key={investment.id} className="p-3 border rounded-lg hover:bg-background transition-colors">
             <div className="flex items-center justify-between mb-2">
-              <h4 className="font-semibold text-gray-900">{investment.id}</h4>
+              <h4 className="font-semibold text-foreground">{investment.id}</h4>
               <span className={`px-2 py-1 text-xs rounded-full ${
                 investment.status === 'Đang hoạt động' 
-                  ? 'bg-green-100 text-green-700' 
-                  : 'bg-blue-100 text-blue-700'
+                  ? 'bg-success-subtle text-primary' 
+                  : 'bg-info-subtle text-blue-700'
               }`}>
                 {investment.status}
               </span>
@@ -57,17 +57,17 @@ const InvestmentOverview: React.FC = () => {
             <div className="flex items-center justify-between text-sm">
               <div className="flex space-x-4">
                 <div>
-                  <p className="text-gray-600">{investment.amount}</p>
-                  <p className="text-xs text-gray-500">{investment.type}</p>
+                  <p className="text-muted-foreground">{investment.amount}</p>
+                  <p className="text-xs text-muted-foreground">{investment.type}</p>
                 </div>
                 <div>
-                  <p className="font-medium text-green-600">{investment.profit}</p>
-                  <p className="text-xs text-gray-500">({investment.profitPercent})</p>
+                  <p className="font-medium text-primary">{investment.profit}</p>
+                  <p className="text-xs text-muted-foreground">({investment.profitPercent})</p>
                 </div>
               </div>
               
               <div className="text-right">
-                <p className="text-xs text-gray-500 flex items-center">
+                <p className="text-xs text-muted-foreground flex items-center">
                   <Clock className="w-3 h-3 mr-1" />
                   {investment.date}
                 </p>
@@ -77,15 +77,15 @@ const InvestmentOverview: React.FC = () => {
         ))}
       </div>
 
-      <div className="mt-4 p-3 bg-green-50 rounded-lg">
+      <div className="mt-4 p-3 bg-success-subtle rounded-lg">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-green-800">Tổng lợi nhuận</p>
-            <p className="text-lg font-bold text-green-600">+60 triệu VND</p>
+            <p className="text-sm font-medium text-success-strong">Tổng lợi nhuận</p>
+            <p className="text-lg font-bold text-primary">+60 triệu VND</p>
           </div>
           <div className="text-right">
-            <p className="text-sm text-green-700">Tỷ suất trung bình</p>
-            <p className="text-lg font-bold text-green-600">3.75%</p>
+            <p className="text-sm text-primary">Tỷ suất trung bình</p>
+            <p className="text-lg font-bold text-primary">3.75%</p>
           </div>
         </div>
       </div>

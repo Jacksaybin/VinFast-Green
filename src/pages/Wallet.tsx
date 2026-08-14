@@ -99,14 +99,14 @@ const WalletPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background text-foreground">
       <Header />
 
-      <div className="px-4 py-4">
+      <div className="px-4 py-4 max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => navigate('/my-account')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Quay lại tài khoản</span>
@@ -114,39 +114,40 @@ const WalletPage: React.FC = () => {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="p-2 text-gray-500 hover:text-green-600 disabled:opacity-50"
+            className="p-2 text-muted-foreground hover:text-primary disabled:opacity-50"
             title="Làm mới"
           >
             <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
-        <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-2xl p-6 text-white mb-6">
+        <div className="bg-gradient-hero rounded-2xl p-6 text-white mb-6 shadow-elevated relative overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-card/10 blur-2xl pointer-events-none" />
           <div className="flex items-center gap-2 mb-4">
             <Wallet className="w-6 h-6" />
-            <span className="text-green-100">Số dư khả dụng</span>
+            <span className="text-primary-foreground/80">Số dư khả dụng</span>
           </div>
           <div className="text-3xl font-bold mb-4">{formatCurrency(balance)}</div>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="bg-white/10 rounded-lg p-3">
-              <div className="text-green-100 flex items-center gap-1">
+          <div className="grid grid-cols-2 gap-4 text-sm relative">
+            <div className="bg-card/10 backdrop-blur-md rounded-lg p-3">
+              <div className="text-white/80 flex items-center gap-1">
                 <Lock className="w-3 h-3" /> Đang đầu tư
               </div>
               <div className="font-semibold">{formatCurrency(totalInvested)}</div>
             </div>
-            <div className="bg-white/10 rounded-lg p-3">
-              <div className="text-green-100">Đang chờ rút</div>
+            <div className="bg-card/10 backdrop-blur-md rounded-lg p-3">
+              <div className="text-white/80">Đang chờ rút</div>
               <div className="font-semibold">{formatCurrency(lockedBalance)}</div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <div className="flex border-b border-gray-100">
+        <div className="bg-card rounded-2xl shadow-card border border-border overflow-hidden">
+          <div className="flex border-b border-border">
             <button
               onClick={() => { setTab('deposit'); setMessage(null); }}
-              className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${
-                tab === 'deposit' ? 'text-green-600 border-b-2 border-green-600' : 'text-gray-500'
+              className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                tab === 'deposit' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <ArrowDownCircle className="w-4 h-4" />
@@ -154,8 +155,8 @@ const WalletPage: React.FC = () => {
             </button>
             <button
               onClick={() => { setTab('withdraw'); setMessage(null); }}
-              className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 ${
-                tab === 'withdraw' ? 'text-green-600 border-b-2 border-green-600' : 'text-gray-500'
+              className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                tab === 'withdraw' ? 'text-primary border-b-2 border-primary bg-primary/5' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <ArrowUpCircle className="w-4 h-4" />
@@ -165,7 +166,7 @@ const WalletPage: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="p-4 space-y-4">
             {tab === 'deposit' && (
-              <div className="bg-blue-50 rounded-lg p-3 text-sm text-blue-800">
+              <div className="bg-info-subtle rounded-xl p-3 text-sm text-info-strong border border-info/20">
                 <p className="font-medium mb-1">Thông tin chuyển khoản</p>
                 <p>Ngân hàng: {bankInfo?.name || 'Vietcombank'}</p>
                 <p>STK: {bankInfo ? `${bankInfo.account} - ${bankInfo.holder}` : '1234567890 - V-GREEN FUND'}</p>
@@ -174,7 +175,7 @@ const WalletPage: React.FC = () => {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Số tiền (VND)</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Số tiền (VND)</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -183,25 +184,27 @@ const WalletPage: React.FC = () => {
                 placeholder={tab === 'deposit'
                   ? `Tối thiểu ${minAmounts.minDeposit.toLocaleString('vi-VN')}`
                   : `Tối thiểu ${minAmounts.minWithdraw.toLocaleString('vi-VN')}`}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+                className="w-full px-4 py-2 bg-background border border-input rounded-xl focus:ring-2 focus:ring-primary focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Ghi chú</label>
               <input
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Ghi chú thêm (tuỳ chọn)"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+                className="w-full px-4 py-2 bg-background border border-input rounded-xl focus:ring-2 focus:ring-primary focus:outline-none"
               />
             </div>
 
             {message && (
               <div
-                className={`p-3 rounded-lg text-sm ${
-                  message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+                className={`p-3 rounded-xl text-sm border ${
+                  message.type === 'success'
+                    ? 'bg-success-subtle text-success-strong border-success/20'
+                    : 'bg-danger-subtle text-danger-strong border-danger/20'
                 }`}
               >
                 {message.text}
@@ -211,7 +214,7 @@ const WalletPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50"
+              className="w-full py-3 bg-gradient-primary text-primary-foreground rounded-xl font-semibold hover:shadow-glow disabled:opacity-50 transition-all"
             >
               {loading ? 'Đang xử lý...' : tab === 'deposit' ? 'Gửi yêu cầu nạp tiền' : 'Gửi yêu cầu rút tiền'}
             </button>
@@ -220,7 +223,7 @@ const WalletPage: React.FC = () => {
 
         <button
           onClick={() => navigate('/transactions')}
-          className="w-full mt-4 py-3 text-green-600 border border-green-600 rounded-lg font-medium hover:bg-green-50"
+          className="w-full mt-4 py-3 text-primary border border-primary rounded-xl font-medium hover:bg-primary/10 transition-colors"
         >
           Xem lịch sử giao dịch
         </button>

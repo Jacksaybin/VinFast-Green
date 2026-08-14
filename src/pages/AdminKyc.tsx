@@ -78,10 +78,10 @@ const AdminKyc: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <FileCheck className="w-6 h-6 text-green-600" />
-          <h2 className="text-xl font-bold text-gray-900">Duyệt KYC</h2>
+          <FileCheck className="w-6 h-6 text-primary" />
+          <h2 className="text-xl font-bold text-foreground">Duyệt KYC</h2>
         </div>
-        <button onClick={load} className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200">
+        <button onClick={load} className="p-2 bg-muted rounded-lg hover:bg-gray-200">
           <RefreshCw className="w-4 h-4" />
         </button>
       </div>
@@ -95,14 +95,14 @@ const AdminKyc: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {users.map((u) => (
-            <div key={u.id} className="bg-white rounded-xl shadow-sm p-4">
+            <div key={u.id} className="bg-card rounded-xl shadow-card p-4">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h4 className="font-semibold text-gray-900">{u.full_name}</h4>
-                  <p className="text-sm text-gray-600">{u.phone}</p>
-                  {u.email && <p className="text-xs text-gray-500">{u.email}</p>}
+                  <h4 className="font-semibold text-foreground">{u.full_name}</h4>
+                  <p className="text-sm text-muted-foreground">{u.phone}</p>
+                  {u.email && <p className="text-xs text-muted-foreground">{u.email}</p>}
                 </div>
-                <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full">Chờ duyệt</span>
+                <span className="text-xs px-2 py-1 bg-warning-subtle text-yellow-700 rounded-full">Chờ duyệt</span>
               </div>
 
               <div className="grid grid-cols-2 gap-2 mb-3">
@@ -122,13 +122,13 @@ const AdminKyc: React.FC = () => {
                 <button
                   onClick={() => approve(u.id)}
                   disabled={processing}
-                  className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 flex items-center justify-center gap-1 text-sm disabled:opacity-50"
+                  className="flex-1 bg-primary text-white py-2 rounded-lg hover:bg-primary flex items-center justify-center gap-1 text-sm disabled:opacity-50"
                 >
                   <Check className="w-4 h-4" /> Duyệt
                 </button>
                 <button
                   onClick={() => { setSelected(u); setRejectReason(''); }}
-                  className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 flex items-center justify-center gap-1 text-sm"
+                  className="flex-1 bg-danger text-white py-2 rounded-lg hover:bg-red-700 flex items-center justify-center gap-1 text-sm"
                 >
                   <XIcon className="w-4 h-4" /> Từ chối
                 </button>
@@ -141,12 +141,12 @@ const AdminKyc: React.FC = () => {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-            className="p-2 border rounded-lg disabled:opacity-50 hover:bg-gray-100">
+            className="p-2 border rounded-lg disabled:opacity-50 hover:bg-muted">
             <ChevronLeft className="w-4 h-4" />
           </button>
           <span className="text-sm">Trang {page} / {totalPages}</span>
           <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
-            className="p-2 border rounded-lg disabled:opacity-50 hover:bg-gray-100">
+            className="p-2 border rounded-lg disabled:opacity-50 hover:bg-muted">
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -154,9 +154,9 @@ const AdminKyc: React.FC = () => {
 
       {selected && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+          <div className="bg-card rounded-xl p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-bold mb-2">Từ chối hồ sơ KYC</h3>
-            <p className="text-sm text-gray-600 mb-3">{selected.full_name} ({selected.phone})</p>
+            <p className="text-sm text-muted-foreground mb-3">{selected.full_name} ({selected.phone})</p>
             <label className="block text-sm font-medium mb-1">Lý do từ chối</label>
             <textarea
               value={rejectReason}
@@ -169,11 +169,11 @@ const AdminKyc: React.FC = () => {
               <button
                 onClick={() => reject(selected.id)}
                 disabled={processing}
-                className="flex-1 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700 disabled:opacity-50"
+                className="flex-1 bg-danger text-white py-2 rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
                 {processing ? 'Đang xử lý...' : 'Xác nhận từ chối'}
               </button>
-              <button onClick={() => setSelected(null)} className="flex-1 border py-2 rounded-lg hover:bg-gray-50">Hủy</button>
+              <button onClick={() => setSelected(null)} className="flex-1 border py-2 rounded-lg hover:bg-background">Hủy</button>
             </div>
           </div>
         </div>

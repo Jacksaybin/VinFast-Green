@@ -104,7 +104,7 @@ const Referral: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Header />
 
       <div className="px-4 py-4 pb-24">
@@ -112,21 +112,21 @@ const Referral: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Quay lại</span>
           </button>
           <button
             onClick={() => { fetchStats(); fetchBonuses(1); }}
-            className="p-2 text-gray-500 hover:text-green-600"
+            className="p-2 text-muted-foreground hover:text-primary"
           >
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
 
-        <h1 className="text-xl font-bold text-gray-900 mb-1">Giới thiệu bạn bè</h1>
-        <p className="text-sm text-gray-500 mb-6">Chia sẻ mã và nhận thưởng khi bạn bè đăng ký & đầu tư</p>
+        <h1 className="text-xl font-bold text-foreground mb-1">Giới thiệu bạn bè</h1>
+        <p className="text-sm text-muted-foreground mb-6">Chia sẻ mã và nhận thưởng khi bạn bè đăng ký & đầu tư</p>
 
         {/* Tab Navigation */}
         <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
@@ -140,14 +140,14 @@ const Referral: React.FC = () => {
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm whitespace-nowrap transition-colors ${
                 activeTab === tab.id
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white text-gray-600 border'
+                  ? 'bg-primary text-white'
+                  : 'bg-card text-muted-foreground border'
               }`}
             >
               <tab.icon className="w-4 h-4" />
               {tab.label}
               {tab.id === 'bonuses' && stats?.pendingCount && stats.pendingCount > 0 && (
-                <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                <span className="bg-danger-subtle0 text-white text-[10px] px-1.5 py-0.5 rounded-full">
                   {stats.pendingCount}
                 </span>
               )}
@@ -159,10 +159,10 @@ const Referral: React.FC = () => {
         {activeTab === 'overview' && (
           <div className="space-y-4">
             {/* Referral Code Card */}
-            <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-2xl p-5 text-white">
+            <div className="bg-gradient-to-br from-brand-primary-600 to-brand-primary-700 rounded-2xl p-5 text-white">
               <div className="flex items-center gap-2 mb-3">
-                <Star className="w-5 h-5 text-yellow-300" />
-                <span className="text-sm text-green-100">Mã giới thiệu của bạn</span>
+                <Star className="w-5 h-5 text-warning-strong" />
+                <span className="text-sm text-primary-foreground">Mã giới thiệu của bạn</span>
               </div>
               <div className="flex items-center gap-3 mb-4">
                 <span className="text-3xl font-bold tracking-wider">
@@ -170,10 +170,10 @@ const Referral: React.FC = () => {
                 </span>
                 <button
                   onClick={handleCopyCode}
-                  className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
+                  className="p-2 bg-card/20 rounded-lg hover:bg-card/30 transition-colors"
                 >
                   {copied ? (
-                    <Check className="w-5 h-5 text-green-200" />
+                    <Check className="w-5 h-5 text-primary-foreground/80" />
                   ) : (
                     <Copy className="w-5 h-5" />
                   )}
@@ -182,14 +182,14 @@ const Referral: React.FC = () => {
               <div className="flex gap-2">
                 <button
                   onClick={handleCopyCode}
-                  className="flex-1 py-2.5 bg-white text-green-700 rounded-xl font-medium hover:bg-green-50 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 bg-card text-primary rounded-xl font-medium hover:bg-success-subtle transition-colors flex items-center justify-center gap-2"
                 >
                   <Copy className="w-4 h-4" />
                   {copied ? 'Đã sao chép!' : 'Sao chép mã'}
                 </button>
                 <button
                   onClick={handleShare}
-                  className="flex-1 py-2.5 bg-white/20 text-white rounded-xl font-medium hover:bg-white/30 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-2.5 bg-card/20 text-white rounded-xl font-medium hover:bg-card/30 transition-colors flex items-center justify-center gap-2"
                 >
                   <Share2 className="w-4 h-4" />
                   Chia sẻ
@@ -199,46 +199,46 @@ const Referral: React.FC = () => {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="bg-white rounded-xl p-4 shadow-sm">
+              <div className="bg-card rounded-xl p-4 shadow-card">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Users className="w-4 h-4 text-blue-600" />
+                  <div className="w-8 h-8 bg-info-subtle rounded-full flex items-center justify-center">
+                    <Users className="w-4 h-4 text-info" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900">{stats?.referralCount || 0}</p>
-                <p className="text-xs text-gray-500">Người đã giới thiệu</p>
+                <p className="text-2xl font-bold text-foreground">{stats?.referralCount || 0}</p>
+                <p className="text-xs text-muted-foreground">Người đã giới thiệu</p>
               </div>
 
-              <div className="bg-white rounded-xl p-4 shadow-sm">
+              <div className="bg-card rounded-xl p-4 shadow-card">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                    <DollarSign className="w-4 h-4 text-yellow-600" />
+                  <div className="w-8 h-8 bg-warning-subtle rounded-full flex items-center justify-center">
+                    <DollarSign className="w-4 h-4 text-warning-strong" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-foreground">
                   {formatCurrency(stats?.totalEarnings || 0)}
                 </p>
-                <p className="text-xs text-gray-500">Tổng thưởng đã nhận</p>
+                <p className="text-xs text-muted-foreground">Tổng thưởng đã nhận</p>
               </div>
             </div>
 
             {/* Pending Bonuses */}
             {(stats?.pendingCount || 0) > 0 && (
-              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+              <div className="bg-warning-subtle border border-orange-200 rounded-xl p-4">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Gift className="w-5 h-5 text-orange-600" />
+                  <div className="w-10 h-10 bg-warning-subtle rounded-full flex items-center justify-center flex-shrink-0">
+                    <Gift className="w-5 h-5 text-warning-strong" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold text-gray-900 mb-1">
+                    <p className="font-semibold text-foreground mb-1">
                       Bạn có {stats?.pendingCount} thưởng chờ nhận!
                     </p>
-                    <p className="text-sm text-gray-600 mb-3">
+                    <p className="text-sm text-muted-foreground mb-3">
                       Tổng cộng {formatCurrency(stats?.pendingAmount || 0)} VNĐ
                     </p>
                     <button
                       onClick={() => setActiveTab('bonuses')}
-                      className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors"
+                      className="px-4 py-2 bg-warning-subtle0 text-white rounded-lg text-sm font-medium hover:bg-orange-600 transition-colors"
                     >
                       Nhận thưởng ngay
                     </button>
@@ -248,8 +248,8 @@ const Referral: React.FC = () => {
             )}
 
             {/* How it works */}
-            <div className="bg-white rounded-xl p-4 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-4">Cách thức hoạt động</h3>
+            <div className="bg-card rounded-xl p-4 shadow-card">
+              <h3 className="font-semibold text-foreground mb-4">Cách thức hoạt động</h3>
               <div className="space-y-4">
                 {[
                   {
@@ -257,21 +257,21 @@ const Referral: React.FC = () => {
                     title: 'Chia sẻ mã giới thiệu',
                     desc: 'Gửi mã của bạn cho bạn bè qua tin nhắn hoặc mạng xã hội',
                     icon: Share2,
-                    color: 'bg-green-100 text-green-600',
+                    color: 'bg-success-subtle text-primary',
                   },
                   {
                     step: 2,
                     title: 'Bạn bè đăng ký',
                     desc: 'Khi bạn bè đăng ký với mã của bạn, bạn nhận 10,000 VNĐ',
                     icon: User,
-                    color: 'bg-blue-100 text-blue-600',
+                    color: 'bg-info-subtle text-info',
                   },
                   {
                     step: 3,
                     title: 'Bạn bè đầu tư',
                     desc: 'Nhận 1% giá trị đầu tư (tối đa 500,000 VNĐ) + thưởng mốc',
                     icon: TrendingUp,
-                    color: 'bg-yellow-100 text-yellow-600',
+                    color: 'bg-warning-subtle text-warning-strong',
                   },
                   {
                     step: 4,
@@ -286,8 +286,8 @@ const Referral: React.FC = () => {
                       <item.icon className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900 text-sm">{item.title}</p>
-                      <p className="text-xs text-gray-500">{item.desc}</p>
+                      <p className="font-medium text-foreground text-sm">{item.title}</p>
+                      <p className="text-xs text-muted-foreground">{item.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -300,17 +300,17 @@ const Referral: React.FC = () => {
         {activeTab === 'bonuses' && (
           <div className="space-y-4">
             {/* Summary */}
-            <div className="bg-white rounded-xl p-4 shadow-sm">
+            <div className="bg-card rounded-xl p-4 shadow-card">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Tổng thưởng</p>
-                  <p className="text-xl font-bold text-gray-900">
+                  <p className="text-sm text-muted-foreground">Tổng thưởng</p>
+                  <p className="text-xl font-bold text-foreground">
                     {formatCurrency(stats?.totalEarnings || 0)}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-gray-500">Chờ nhận</p>
-                  <p className="text-xl font-bold text-orange-600">
+                  <p className="text-sm text-muted-foreground">Chờ nhận</p>
+                  <p className="text-xl font-bold text-warning-strong">
                     {formatCurrency(stats?.pendingAmount || 0)}
                   </p>
                 </div>
@@ -318,16 +318,16 @@ const Referral: React.FC = () => {
             </div>
 
             {/* Bonus List */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-gray-100">
-                <h3 className="font-semibold text-gray-900">Lịch sử thưởng</h3>
+            <div className="bg-card rounded-xl shadow-card overflow-hidden">
+              <div className="p-4 border-b border-border">
+                <h3 className="font-semibold text-foreground">Lịch sử thưởng</h3>
               </div>
 
               {bonuses.length === 0 ? (
                 <div className="p-8 text-center">
                   <Gift className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500 text-sm">Chưa có thưởng nào</p>
-                  <p className="text-gray-400 text-xs mt-1">
+                  <p className="text-muted-foreground text-sm">Chưa có thưởng nào</p>
+                  <p className="text-muted-foreground text-xs mt-1">
                     Giới thiệu bạn bè để nhận thưởng!
                   </p>
                 </div>
@@ -337,29 +337,29 @@ const Referral: React.FC = () => {
                     <div key={bonus.id} className="p-4">
                       <div className="flex items-start gap-3">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          bonus.status === 'pending' ? 'bg-orange-100 text-orange-600' :
-                          bonus.status === 'credited' ? 'bg-green-100 text-green-600' :
-                          'bg-gray-100 text-gray-600'
+                          bonus.status === 'pending' ? 'bg-warning-subtle text-warning-strong' :
+                          bonus.status === 'credited' ? 'bg-success-subtle text-primary' :
+                          'bg-muted text-muted-foreground'
                         }`}>
                           {getBonusTypeIcon(bonus.bonus_type)}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <p className="font-medium text-gray-900 text-sm">
+                            <p className="font-medium text-foreground text-sm">
                               {getBonusTypeLabel(bonus.bonus_type)}
                             </p>
                             <p className={`font-bold text-sm ${
-                              bonus.status === 'pending' ? 'text-orange-600' :
-                              bonus.status === 'credited' ? 'text-green-600' :
-                              'text-gray-500'
+                              bonus.status === 'pending' ? 'text-warning-strong' :
+                              bonus.status === 'credited' ? 'text-primary' :
+                              'text-muted-foreground'
                             }`}>
                               {formatCurrency(bonus.bonus_amount)}
                             </p>
                           </div>
-                          <p className="text-xs text-gray-500 mt-0.5">
+                          <p className="text-xs text-muted-foreground mt-0.5">
                             {bonus.referred_user_name || bonus.referred_user_phone || 'N/A'}
                           </p>
-                          <p className="text-xs text-gray-400 mt-0.5">
+                          <p className="text-xs text-muted-foreground mt-0.5">
                             {formatDate(bonus.created_at)}
                           </p>
                           {bonus.status === 'pending' && (
@@ -367,7 +367,7 @@ const Referral: React.FC = () => {
                               <button
                                 onClick={() => handleClaimBonus(bonus.id)}
                                 disabled={claimingBonusId === bonus.id}
-                                className="px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs font-medium hover:bg-orange-600 disabled:opacity-50 transition-colors"
+                                className="px-3 py-1.5 bg-warning-subtle0 text-white rounded-lg text-xs font-medium hover:bg-orange-600 disabled:opacity-50 transition-colors"
                               >
                                 {claimingBonusId === bonus.id ? (
                                   'Đang xử lý...'
@@ -380,7 +380,7 @@ const Referral: React.FC = () => {
                           {bonus.status === 'credited' && (
                             <div className="flex items-center gap-1 mt-1">
                               <Check className="w-3 h-3 text-green-500" />
-                              <span className="text-xs text-green-600">Đã nhận</span>
+                              <span className="text-xs text-primary">Đã nhận</span>
                             </div>
                           )}
                         </div>
@@ -392,7 +392,7 @@ const Referral: React.FC = () => {
 
               {/* Pagination */}
               {totalBonuses > 10 && (
-                <div className="p-4 border-t border-gray-100 flex items-center justify-center gap-2">
+                <div className="p-4 border-t border-border flex items-center justify-center gap-2">
                   <button
                     onClick={() => fetchBonuses(bonusPage - 1)}
                     disabled={bonusPage <= 1}
@@ -400,7 +400,7 @@ const Referral: React.FC = () => {
                   >
                     ←
                   </button>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-muted-foreground">
                     Trang {bonusPage} / {Math.ceil(totalBonuses / 10)}
                   </span>
                   <button
@@ -420,36 +420,36 @@ const Referral: React.FC = () => {
         {activeTab === 'friends' && (
           <div className="space-y-4">
             {/* Summary */}
-            <div className="bg-white rounded-xl p-4 shadow-sm text-center">
-              <p className="text-4xl font-bold text-green-600 mb-1">
+            <div className="bg-card rounded-xl p-4 shadow-card text-center">
+              <p className="text-4xl font-bold text-primary mb-1">
                 {stats?.referralCount || 0}
               </p>
-              <p className="text-sm text-gray-500">Người bạn đã giới thiệu</p>
+              <p className="text-sm text-muted-foreground">Người bạn đã giới thiệu</p>
             </div>
 
             {/* Friends List */}
             {stats?.referredUsers && stats.referredUsers.length > 0 ? (
-              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <div className="bg-card rounded-xl shadow-card overflow-hidden">
                 <div className="divide-y divide-gray-100">
                   {stats.referredUsers.map((friend) => (
                     <div key={friend.id} className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                          <User className="w-5 h-5 text-gray-500" />
+                        <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                          <User className="w-5 h-5 text-muted-foreground" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 text-sm">
+                          <p className="font-medium text-foreground text-sm">
                             {friend.full_name || friend.phone || 'N/A'}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-muted-foreground">
                             {formatDate(friend.created_at)}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium text-green-600 text-sm">
+                          <p className="font-medium text-primary text-sm">
                             {formatCurrency(friend.total_bonus || 0)}
                           </p>
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-muted-foreground">
                             {friend.bonus_count || 0} thưởng
                           </p>
                         </div>
@@ -459,15 +459,15 @@ const Referral: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-xl p-8 shadow-sm text-center">
+              <div className="bg-card rounded-xl p-8 shadow-card text-center">
                 <Users className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">Chưa có người bạn nào</p>
-                <p className="text-gray-400 text-xs mt-1">
+                <p className="text-muted-foreground text-sm">Chưa có người bạn nào</p>
+                <p className="text-muted-foreground text-xs mt-1">
                   Chia sẻ mã giới thiệu để nhận thưởng!
                 </p>
                 <button
                   onClick={handleShare}
-                  className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                  className="mt-4 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary transition-colors"
                 >
                   Chia sẻ ngay
                 </button>

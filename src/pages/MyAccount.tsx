@@ -53,35 +53,35 @@ const MyAccount: React.FC = () => {
     {
       label: 'Số dư khả dụng',
       value: formatShortCurrency(balance),
-      icon: <Wallet className="w-5 h-5 text-green-600" />,
-      bg: 'bg-green-50',
-      color: 'text-green-700',
+      icon: <Wallet className="w-5 h-5 text-success-strong" />,
+      bg: 'bg-success-subtle',
+      color: 'text-success-strong',
       action: () => navigate('/wallet'),
       actionLabel: 'Nạp/Rút',
     },
     {
       label: 'Đang đầu tư',
       value: formatShortCurrency(totalInvested),
-      icon: <TrendingUp className="w-5 h-5 text-blue-600" />,
-      bg: 'bg-blue-50',
-      color: 'text-blue-700',
+      icon: <TrendingUp className="w-5 h-5 text-info" />,
+      bg: 'bg-info-subtle',
+      color: 'text-info-strong',
       action: () => navigate('/investment'),
       actionLabel: 'Đầu tư thêm',
     },
     {
       label: 'Lợi nhuận',
       value: `+${formatShortCurrency(totalProfit)}`,
-      icon: <BarChart3 className="w-5 h-5 text-amber-600" />,
-      bg: 'bg-amber-50',
-      color: 'text-amber-700',
+      icon: <BarChart3 className="w-5 h-5 text-warning-strong" />,
+      bg: 'bg-warning-subtle',
+      color: 'text-warning-strong',
       action: () => navigate('/interest-calculator'),
       actionLabel: 'Tính lãi',
     },
     {
       label: 'Đang chờ rút',
       value: formatShortCurrency(lockedBalance),
-      icon: <Clock className="w-5 h-5 text-orange-600" />,
-      bg: 'bg-orange-50',
+      icon: <Clock className="w-5 h-5 text-warning-strong" />,
+      bg: 'bg-warning-subtle',
       color: 'text-orange-700',
       action: () => navigate('/transactions'),
       actionLabel: 'Lịch sử',
@@ -92,25 +92,25 @@ const MyAccount: React.FC = () => {
     {
       label: 'Nạp tiền',
       icon: <ArrowDownRight className="w-5 h-5" />,
-      color: 'bg-green-600',
+      color: 'bg-success-strong',
       onClick: () => navigate('/wallet'),
     },
     {
       label: 'Đầu tư',
       icon: <TrendingUp className="w-5 h-5" />,
-      color: 'bg-blue-600',
+      color: 'bg-info',
       onClick: () => navigate('/investment'),
     },
     {
       label: 'Thưởng',
       icon: <Gift className="w-5 h-5" />,
-      color: 'bg-amber-600',
+      color: 'bg-warning',
       onClick: () => navigate('/benefits'),
     },
     {
       label: 'Tính lãi',
       icon: <BarChart3 className="w-5 h-5" />,
-      color: 'bg-purple-600',
+      color: 'bg-brand-accent-600',
       onClick: () => navigate('/interest-calculator'),
     },
   ];
@@ -121,7 +121,7 @@ const MyAccount: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Header />
 
       <div className="px-4 pb-24">
@@ -129,7 +129,7 @@ const MyAccount: React.FC = () => {
         <div className="flex items-center justify-between mt-4 mb-2">
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Quay lại</span>
@@ -137,7 +137,7 @@ const MyAccount: React.FC = () => {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="p-2 text-gray-500 hover:text-green-600 disabled:opacity-50"
+            className="p-2 text-muted-foreground hover:text-success-strong disabled:opacity-50"
             title="Làm mới"
           >
             <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
@@ -147,45 +147,45 @@ const MyAccount: React.FC = () => {
         {/* User greeting */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">
+            <h1 className="text-xl font-bold text-foreground">
               Xin chào, {user.fullName}
             </h1>
-            <p className="text-sm text-gray-500">
-              Mã giới thiệu: <span className="font-semibold text-green-600">{user.referralCode}</span>
+            <p className="text-sm text-muted-foreground">
+              Mã giới thiệu: <span className="font-semibold text-success-strong">{user.referralCode}</span>
             </p>
           </div>
           <button
             onClick={() => navigate('/personal-info')}
-            className="text-sm text-green-600 hover:underline font-medium"
+            className="text-sm text-success-strong hover:underline font-medium"
           >
             Hồ sơ
           </button>
         </div>
 
         {/* Total Assets Card */}
-        <div className="bg-gradient-to-br from-green-600 to-green-700 rounded-2xl p-5 text-white mb-4 shadow-lg">
+        <div className="bg-gradient-hero rounded-2xl p-5 text-white mb-4 shadow-elevated">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-green-100 text-sm">Tổng tài sản</span>
+            <span className="text-primary-foreground/80 text-sm">Tổng tài sản</span>
             <button
               onClick={handleLogout}
-              className="text-xs text-green-200 hover:text-white underline"
+              className="text-xs text-primary-foreground/80 hover:text-white underline"
             >
               Đăng xuất
             </button>
           </div>
           <div className="text-2xl font-bold mb-4">{formatCurrency(totalAssets)}</div>
           <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="bg-white/10 rounded-lg p-2">
-              <div className="text-xs text-green-200">Khả dụng</div>
+            <div className="bg-card/10 rounded-lg p-2">
+              <div className="text-xs text-primary-foreground/80">Khả dụng</div>
               <div className="text-sm font-semibold">{formatShortCurrency(balance)}</div>
             </div>
-            <div className="bg-white/10 rounded-lg p-2">
-              <div className="text-xs text-green-200">Đầu tư</div>
+            <div className="bg-card/10 rounded-lg p-2">
+              <div className="text-xs text-primary-foreground/80">Đầu tư</div>
               <div className="text-sm font-semibold">{formatShortCurrency(totalInvested)}</div>
             </div>
-            <div className="bg-white/10 rounded-lg p-2">
-              <div className="text-xs text-green-200">Lợi nhuận</div>
-              <div className="text-sm font-semibold text-green-200">+{formatShortCurrency(totalProfit)}</div>
+            <div className="bg-card/10 rounded-lg p-2">
+              <div className="text-xs text-primary-foreground/80">Lợi nhuận</div>
+              <div className="text-sm font-semibold text-primary-foreground/80">+{formatShortCurrency(totalProfit)}</div>
             </div>
           </div>
         </div>
@@ -196,12 +196,12 @@ const MyAccount: React.FC = () => {
             <button
               key={action.label}
               onClick={action.onClick}
-              className="flex flex-col items-center gap-1 p-3 bg-white rounded-xl shadow-sm hover:shadow transition-shadow"
+              className="flex flex-col items-center gap-1 p-3 bg-card rounded-xl shadow-sm hover:shadow transition-shadow"
             >
               <div className={`${action.color} w-10 h-10 rounded-full flex items-center justify-center text-white`}>
                 {action.icon}
               </div>
-              <span className="text-xs text-gray-700 font-medium">{action.label}</span>
+              <span className="text-xs text-foreground font-medium">{action.label}</span>
             </button>
           ))}
         </div>
@@ -212,29 +212,29 @@ const MyAccount: React.FC = () => {
             <button
               key={stat.label}
               onClick={stat.action}
-              className="bg-white rounded-xl p-4 text-left shadow-sm hover:shadow transition-shadow"
+              className="bg-card rounded-xl p-4 text-left shadow-sm hover:shadow transition-shadow"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className={`w-9 h-9 ${stat.bg} rounded-full flex items-center justify-center`}>
                   {stat.icon}
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-400" />
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </div>
-              <div className="text-xs text-gray-500 mb-1">{stat.label}</div>
+              <div className="text-xs text-muted-foreground mb-1">{stat.label}</div>
               <div className={`text-lg font-bold ${stat.color}`}>{stat.value}</div>
-              <div className="text-xs text-green-600 mt-1">{stat.actionLabel} →</div>
+              <div className="text-xs text-success-strong mt-1">{stat.actionLabel} →</div>
             </button>
           ))}
         </div>
 
         {/* Active Investments */}
-        <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
+        <div className="bg-card rounded-xl shadow-sm p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-green-600" />
+            <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-success-strong" />
               Đầu tư đang hoạt động
             </h2>
-            <span className="text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded-full">
+            <span className="text-xs text-success-strong font-medium bg-success-subtle px-2 py-1 rounded-full">
               {activeInvestments.length} gói
             </span>
           </div>
@@ -242,10 +242,10 @@ const MyAccount: React.FC = () => {
           {activeInvestments.length === 0 ? (
             <div className="text-center py-8">
               <PiggyBank className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-              <p className="text-gray-500 text-sm mb-3">Bạn chưa có gói đầu tư nào</p>
+              <p className="text-muted-foreground text-sm mb-3">Bạn chưa có gói đầu tư nào</p>
               <button
                 onClick={() => navigate('/investment')}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                className="bg-success-strong text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-success-strong transition-colors"
               >
                 Khám phá gói đầu tư
               </button>
@@ -272,42 +272,42 @@ const MyAccount: React.FC = () => {
                 return (
                   <div
                     key={inv.id}
-                    className="border border-gray-100 rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                    className="border border-border rounded-lg p-3 hover:bg-background transition-colors cursor-pointer"
                     onClick={() => navigate('/investment')}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div>
-                        <span className="font-semibold text-gray-900 text-sm">{inv.packageCode}</span>
-                        <span className="ml-2 text-xs text-gray-500">{inv.packageName.split('(')[0]}</span>
+                        <span className="font-semibold text-foreground text-sm">{inv.packageCode}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">{inv.packageName.split('(')[0]}</span>
                       </div>
-                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-success-subtle text-success-strong">
                         Đang hoạt động
                       </span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-xs text-gray-600 mb-2">
+                    <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground mb-2">
                       <div>
-                        <div className="text-gray-400">Số tiền</div>
-                        <div className="font-medium text-gray-900">{formatShortCurrency(inv.amount)}</div>
+                        <div className="text-muted-foreground">Số tiền</div>
+                        <div className="font-medium text-foreground">{formatShortCurrency(inv.amount)}</div>
                       </div>
                       <div>
-                        <div className="text-gray-400">Lãi/ngày</div>
-                        <div className="font-medium text-green-600">+{formatCurrency(dailyProfit)}</div>
+                        <div className="text-muted-foreground">Lãi/ngày</div>
+                        <div className="font-medium text-success-strong">+{formatCurrency(dailyProfit)}</div>
                       </div>
                       <div>
-                        <div className="text-gray-400">Còn lại</div>
-                        <div className="font-medium text-orange-600">{daysLeft} ngày</div>
+                        <div className="text-muted-foreground">Còn lại</div>
+                        <div className="font-medium text-warning-strong">{daysLeft} ngày</div>
                       </div>
                     </div>
                     <div className="w-full">
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-green-500 rounded-full transition-all"
+                          className="h-full bg-success-subtle0 rounded-full transition-all"
                           style={{ width: `${progress}%` }}
                         />
                       </div>
                       <div className="flex justify-between mt-1">
-                        <span className="text-xs text-gray-400">{formatDate(inv.startDate)}</span>
-                        <span className="text-xs text-gray-400">{formatDate(inv.endDate)}</span>
+                        <span className="text-xs text-muted-foreground">{formatDate(inv.startDate)}</span>
+                        <span className="text-xs text-muted-foreground">{formatDate(inv.endDate)}</span>
                       </div>
                     </div>
                   </div>
@@ -318,15 +318,15 @@ const MyAccount: React.FC = () => {
         </div>
 
         {/* Recent Transactions */}
-        <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
+        <div className="bg-card rounded-xl shadow-sm p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-blue-600" />
+            <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+              <Clock className="w-5 h-5 text-info" />
               Giao dịch gần đây
             </h2>
             <button
               onClick={() => navigate('/transactions')}
-              className="text-xs text-green-600 hover:underline font-medium flex items-center gap-1"
+              className="text-xs text-success-strong hover:underline font-medium flex items-center gap-1"
             >
               Xem tất cả <ChevronRight className="w-3 h-3" />
             </button>
@@ -335,7 +335,7 @@ const MyAccount: React.FC = () => {
           {transactions.length === 0 ? (
             <button
               onClick={() => navigate('/investment')}
-              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-200 rounded-lg text-gray-500 hover:border-green-400 hover:text-green-600 transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-border rounded-lg text-muted-foreground hover:border-success hover:text-success-strong transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span className="text-sm font-medium">Đầu tư ngay</span>
@@ -357,19 +357,19 @@ const MyAccount: React.FC = () => {
                 return (
                   <div key={tx.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isIn ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isIn ? 'bg-success-subtle text-success-strong' : 'bg-danger-subtle text-danger'}`}>
                         {isIn ? <ArrowDownRight className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{labels[tx.type] || tx.type}</p>
-                        <p className="text-xs text-gray-400 truncate">{tx.reference}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{labels[tx.type] || tx.type}</p>
+                        <p className="text-xs text-muted-foreground truncate">{tx.reference}</p>
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className={`text-sm font-bold ${isIn ? 'text-green-600' : 'text-red-600'}`}>
+                      <p className={`text-sm font-bold ${isIn ? 'text-success-strong' : 'text-danger'}`}>
                         {isIn ? '+' : '-'}{formatShortCurrency(tx.amount)}
                       </p>
-                      <p className="text-xs text-gray-400">{formatDate(tx.createdAt)}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(tx.createdAt)}</p>
                     </div>
                   </div>
                 );
@@ -379,78 +379,78 @@ const MyAccount: React.FC = () => {
         </div>
 
         {/* Menu Links */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-card rounded-xl shadow-sm overflow-hidden">
           <button
             onClick={() => navigate('/personal-info')}
-            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
+            className="w-full flex items-center justify-between p-4 hover:bg-background transition-colors border-b border-border"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
-                <Eye className="w-4 h-4 text-blue-600" />
+              <div className="w-8 h-8 bg-info-subtle rounded-full flex items-center justify-center">
+                <Eye className="w-4 h-4 text-info" />
               </div>
-              <span className="font-medium text-gray-900">Thông tin cá nhân</span>
+              <span className="font-medium text-foreground">Thông tin cá nhân</span>
             </div>
-            <ChevronRight className="w-4 h-4 text-gray-400" />
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
           <button
             onClick={() => navigate('/notifications')}
-            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
+            className="w-full flex items-center justify-between p-4 hover:bg-background transition-colors border-b border-border"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-amber-50 rounded-full flex items-center justify-center">
-                <Gift className="w-4 h-4 text-amber-600" />
+              <div className="w-8 h-8 bg-warning-subtle rounded-full flex items-center justify-center">
+                <Gift className="w-4 h-4 text-warning-strong" />
               </div>
-              <span className="font-medium text-gray-900">Thông báo</span>
+              <span className="font-medium text-foreground">Thông báo</span>
             </div>
-            <ChevronRight className="w-4 h-4 text-gray-400" />
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
           <button
             onClick={() => navigate('/benefits')}
-            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
+            className="w-full flex items-center justify-between p-4 hover:bg-background transition-colors border-b border-border"
           >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-purple-50 rounded-full flex items-center justify-center">
                 <Gift className="w-4 h-4 text-purple-600" />
               </div>
-              <span className="font-medium text-gray-900">Phúc lợi & Thưởng</span>
+              <span className="font-medium text-foreground">Phúc lợi & Thưởng</span>
             </div>
-            <ChevronRight className="w-4 h-4 text-gray-400" />
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
           <button
             onClick={() => navigate('/referral')}
-            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
+            className="w-full flex items-center justify-between p-4 hover:bg-background transition-colors border-b border-border"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-green-50 rounded-full flex items-center justify-center">
-                <Users className="w-4 h-4 text-green-600" />
+              <div className="w-8 h-8 bg-success-subtle rounded-full flex items-center justify-center">
+                <Users className="w-4 h-4 text-success-strong" />
               </div>
-              <span className="font-medium text-gray-900">Giới thiệu bạn bè</span>
+              <span className="font-medium text-foreground">Giới thiệu bạn bè</span>
             </div>
-            <ChevronRight className="w-4 h-4 text-gray-400" />
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
           <button
             onClick={() => navigate('/reinvest')}
-            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
+            className="w-full flex items-center justify-between p-4 hover:bg-background transition-colors border-b border-border"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
-                <RefreshCw className="w-4 h-4 text-blue-600" />
+              <div className="w-8 h-8 bg-info-subtle rounded-full flex items-center justify-center">
+                <RefreshCw className="w-4 h-4 text-info" />
               </div>
-              <span className="font-medium text-gray-900">Tái đầu tư</span>
+              <span className="font-medium text-foreground">Tái đầu tư</span>
             </div>
-            <ChevronRight className="w-4 h-4 text-gray-400" />
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
           <button
             onClick={() => navigate('/introduction')}
-            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center justify-between p-4 hover:bg-background transition-colors"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                <ArrowUpRight className="w-4 h-4 text-gray-600" />
+              <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
               </div>
-              <span className="font-medium text-gray-900">Giới thiệu V-GREEN</span>
+              <span className="font-medium text-foreground">Giới thiệu V-GREEN</span>
             </div>
-            <ChevronRight className="w-4 h-4 text-gray-400" />
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
       </div>
