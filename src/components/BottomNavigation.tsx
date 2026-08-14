@@ -14,6 +14,7 @@ const BottomNavigation: React.FC = () => {
   const links = [
     { to: "/", label: "Trang chủ" },
     { to: "/investment", label: "Đầu tư" },
+    { to: "/reinvest", label: "Tái đầu tư" },
     { to: "/benefits", label: "Phúc lợi" },
     { to: "/my-account", label: "Của tôi" },
   ];

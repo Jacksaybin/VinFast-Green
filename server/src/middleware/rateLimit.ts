@@ -1,0 +1,60 @@
+/**
+ * Rate-limit middleware - in-memory token bucket
+ * For production use Redis. This is a simple per-process implementation.
+ */
+
+interface Bucket {
+  count: number;
+  resetAt: number;
+}
+
+const buckets = new Map<string, Bucket>();
+
+/**
+ * Returns true if request is allowed, false if rate-limited.
+ * Default: 10 requests per 60-second window per key.
+ */
+export function rateLimit(key: string, maxRequests = 10, windowMs = 60_000): boolean {
+  const now = Date.now();
+  const bucket = buckets.get(key);
+
+  if (!bucket || bucket.resetAt < now) {
+    buckets.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+
+  if (bucket.count >= maxRequests) {
+    return false;
+  }
+
+  bucket.count++;
+  return true;
+}
+
+/**
+ * Express middleware factory.
+ * Identifies the client by ip + optional route prefix.
+ */
+export function rateLimitMiddleware(maxRequests: number, windowMs: number, prefix = 'rl') {
+  return (req: any, res: any, next: any) => {
+    const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
+    const key = `${prefix}:${ip}:${req.method}:${req.path}`;
+    if (!rateLimit(key, maxRequests, windowMs)) {
+      return res.status(429).json({
+        success: false,
+        error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.',
+      });
+    }
+    next();
+  };
+}
+
+/**
+ * Periodically clean up expired buckets to avoid memory leak.
+ */
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, bucket] of buckets.entries()) {
+    if (bucket.resetAt < now) buckets.delete(key);
+  }
+}, 5 * 60_000).unref();

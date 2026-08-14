@@ -184,29 +184,6 @@ const Login: React.FC = () => {
           </div>
         </div>
 
-        {/* Demo Access */}
-        <div className="mt-6 bg-white rounded-xl shadow-sm p-4">
-          <div className="flex items-center space-x-3 mb-3">
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-              <Shield className="w-5 h-5 text-blue-600" />
-            </div>
-            <h4 className="font-semibold text-gray-900">Demo Access</h4>
-          </div>
-          
-          <div className="space-y-2 text-sm text-gray-600 mb-4">
-            <p>• <span className="font-medium">User:</span> Bất kỳ số điện thoại nào</p>
-            <p>• <span className="font-medium">Admin:</span> phone: "admin", password: "admin123"</p>
-          </div>
-          
-          <button
-            type="button"
-            onClick={() => setFormData({ phone: 'admin', password: 'admin123' })}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-          >
-            Điền thông tin Admin demo
-          </button>
-        </div>
-
         {/* Security Notice */}
         <div className="mt-6 bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
           <div className="flex items-start space-x-3">

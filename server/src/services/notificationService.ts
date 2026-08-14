@@ -63,12 +63,25 @@ export const notificationService = {
     title: string,
     message: string,
     type = 'info',
-    link?: string
+    link?: string,
+    targetFilter?: { role?: string; kycStatus?: string }
   ): Promise<number> {
+    const where: string[] = ["status = 'active'"];
+    const params: any[] = [title, message, type, link || null];
+
+    if (targetFilter?.role) {
+      params.push(targetFilter.role);
+      where.push(`role = $${params.length}`);
+    }
+    if (targetFilter?.kycStatus) {
+      params.push(targetFilter.kycStatus);
+      where.push(`kyc_status = $${params.length}`);
+    }
+
     const count = await execute(
       `INSERT INTO notifications (user_id, title, message, type, link)
-       SELECT id, $1, $2, $3, $4 FROM users WHERE status = 'active'`,
-      [title, message, type, link]
+       SELECT id, $1, $2, $3, $4 FROM users WHERE ${where.join(' AND ')}`,
+      params
     );
     return count;
   },

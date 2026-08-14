@@ -12,6 +12,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useWalletStore } from '../stores/walletStore';
 import { useInvestmentStore } from '../stores/investmentStore';
 import { useNotificationStore } from '../stores/notificationStore';
+import { settingsApi } from '../lib/api';
 import { formatCurrency } from '../lib/format';
 
 const WalletPage: React.FC = () => {
@@ -27,12 +28,18 @@ const WalletPage: React.FC = () => {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [bankInfo, setBankInfo] = useState<{ name: string; account: string; holder: string } | null>(null);
+  const [minAmounts, setMinAmounts] = useState({ minDeposit: 100000, minWithdraw: 100000 });
 
   useEffect(() => {
     const load = async () => {
       setRefreshing(true);
       await refresh();
       setRefreshing(false);
+
+      const [bank, mins] = await Promise.all([settingsApi.getBankInfo(), settingsApi.getMinAmounts()]);
+      if (bank) setBankInfo(bank);
+      setMinAmounts(mins);
     };
     load();
   }, []);
@@ -160,8 +167,8 @@ const WalletPage: React.FC = () => {
             {tab === 'deposit' && (
               <div className="bg-blue-50 rounded-lg p-3 text-sm text-blue-800">
                 <p className="font-medium mb-1">Thông tin chuyển khoản</p>
-                <p>Ngân hàng: Vietcombank</p>
-                <p>STK: 1234567890 - V-GREEN FUND</p>
+                <p>Ngân hàng: {bankInfo?.name || 'Vietcombank'}</p>
+                <p>STK: {bankInfo ? `${bankInfo.account} - ${bankInfo.holder}` : '1234567890 - V-GREEN FUND'}</p>
                 <p>Nội dung: NAP {user.phone}</p>
               </div>
             )}
@@ -173,7 +180,9 @@ const WalletPage: React.FC = () => {
                 inputMode="numeric"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder={tab === 'deposit' ? 'Tối thiểu 100.000' : 'Tối thiểu 100.000'}
+                placeholder={tab === 'deposit'
+                  ? `Tối thiểu ${minAmounts.minDeposit.toLocaleString('vi-VN')}`
+                  : `Tối thiểu ${minAmounts.minWithdraw.toLocaleString('vi-VN')}`}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
               />
             </div>

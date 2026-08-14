@@ -11,12 +11,14 @@ const router = Router();
 
 router.get('/', requireAuth, async (req: AuthRequest, res: Response) => {
   const { page = '1', limit = '20' } = req.query;
+  const p = parseInt(String(page));
+  const l = parseInt(String(limit));
   const result = await notificationService.getNotifications(
     req.user!.userId,
-    parseInt(page as string),
-    parseInt(limit as string)
+    p,
+    l
   );
-  return paginated(res, result.notifications, result.total, parseInt(page as string), parseInt(limit as string));
+  return paginated(res, result.notifications, result.total, p, l);
 });
 
 router.get('/unread-count', requireAuth, async (req: AuthRequest, res: Response) => {
@@ -25,7 +27,7 @@ router.get('/unread-count', requireAuth, async (req: AuthRequest, res: Response)
 });
 
 router.put('/:id/read', requireAuth, async (req: AuthRequest, res: Response) => {
-  await notificationService.markAsRead(req.params.id, req.user!.userId);
+  await notificationService.markAsRead(String(req.params.id), req.user!.userId);
   return ok(res, null, 'Đã đánh dấu đã đọc');
 });
 

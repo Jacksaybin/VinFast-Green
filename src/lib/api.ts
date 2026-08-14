@@ -7,19 +7,32 @@ const API_BASE = (typeof process !== 'undefined' && (process as any).env?.VITE_A
   || 'http://localhost:3001/api';
 
 let authToken: string | null = null;
+let refreshAuthToken: string | null = localStorage.getItem('vgreen_refresh');
 
 export function setAuthToken(token: string | null) {
   authToken = token;
+}
+
+export function setRefreshToken(token: string | null) {
+  refreshAuthToken = token;
+  if (token) localStorage.setItem('vgreen_refresh', token);
+  else localStorage.removeItem('vgreen_refresh');
 }
 
 export function getAuthToken(): string | null {
   return authToken;
 }
 
-async function request<T = any>(
+export function getRefreshToken(): string | null {
+  return refreshAuthToken;
+}
+
+type RequestOptions = RequestInit & { _retry?: boolean };
+
+async function doRequest<T= any>(
   endpoint: string,
-  options: RequestInit = {}
-): Promise<{ success: boolean; data?: T; error?: string; errors?: any[] }> {
+  options: RequestOptions = {}
+): Promise<Response> {
   const url = `${API_BASE}${endpoint}`;
 
   const headers: Record<string, string> = {
@@ -31,12 +44,45 @@ async function request<T = any>(
     headers['Authorization'] = `Bearer ${authToken}`;
   }
 
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
+  return fetch(url, { ...options, headers });
+}
 
+async function refreshAccessToken(): Promise<boolean> {
+  if (!refreshAuthToken) return false;
+  try {
+    const response = await fetch(`${API_BASE}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: refreshAuthToken }),
+    });
+    const json = await response.json();
+    if (response.ok && json.data?.tokens?.accessToken) {
+      authToken = json.data.tokens.accessToken;
+      setRefreshToken(json.data.tokens.refreshToken);
+      return true;
+    }
+  } catch {
+    // network offline — keep existing token
+    return false;
+  }
+  return false;
+}
+
+async function request<T = any>(
+  endpoint: string,
+  options: RequestOptions = {}
+): Promise<{ success: boolean; data?: T; error?: string; errors?: any[] }> {
+  let response = await doRequest(endpoint, options);
+
+  // Token expired -> try to refresh once and retry
+  if (response.status === 401 && refreshAuthToken && !options._retry) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed && authToken) {
+      response = await doRequest(endpoint, { ...options, _retry: true });
+    }
+  }
+
+  try {
     const json = await response.json();
 
     if (!response.ok) {
@@ -66,6 +112,9 @@ export interface ApiUser {
   referralCode: string;
   referredBy?: string;
   kycStatus: 'none' | 'pending' | 'approved' | 'rejected';
+  bankAccount?: string | null;
+  bankName?: string | null;
+  bankBranch?: string | null;
   createdAt: string;
 }
 
@@ -173,8 +222,30 @@ export const authApi = {
     return result.success ? result.data! : null;
   },
 
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+    const result = await request('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    return { success: result.success, error: result.error };
+  },
+
+  async getReferrals(): Promise<{ referred: any[]; totalCommission: number; commissionCount: number }> {
+    const result = await request<{ referred: any[]; totalCommission: number; commissionCount: number }>('/auth/referrals');
+    return result.data || { referred: [], totalCommission: 0, commissionCount: 0 };
+  },
+
   async logout(): Promise<void> {
+    try {
+      if (authToken || refreshToken) {
+        await doRequest('/auth/logout', {
+          method: 'POST',
+          body: JSON.stringify({ refreshToken }),
+        });
+      }
+    } catch {}
     authToken = null;
+    refreshToken = null;
   },
 };
 
@@ -280,6 +351,43 @@ export const notificationApi = {
 };
 
 // =============================================
+// SETTINGS API
+// =============================================
+
+const parseSettingValue = (v: any): any => {
+  if (v === null || v === undefined) return null;
+  if (typeof v === 'string') {
+    try { return JSON.parse(v); } catch { return null; }
+  }
+  return v;
+};
+
+export const settingsApi = {
+  async getBankInfo(): Promise<{ name: string; account: string; holder: string } | null> {
+    const result = await request<{ value: any }>('/settings/bank_info');
+    if (!result.success || !result.data?.value) return null;
+    return parseSettingValue(result.data.value);
+  },
+
+  async getMinAmounts(): Promise<{ minDeposit: number; minWithdraw: number }> {
+    const defaults = { minDeposit: 100000, minWithdraw: 100000 };
+    try {
+      const list = await request<any[]>('/settings');
+      if (!list.success) return defaults;
+      const parsed: any = {};
+      for (const s of (list.data || [])) {
+        const v = parseSettingValue(s.value);
+        if (s.id === 'min_deposit') parsed.minDeposit = parseFloat(v?.amount) || defaults.minDeposit;
+        if (s.id === 'min_withdraw') parsed.minWithdraw = parseFloat(v?.amount) || defaults.minWithdraw;
+      }
+      return { minDeposit: parsed.minDeposit || defaults.minDeposit, minWithdraw: parsed.minWithdraw || defaults.minWithdraw };
+    } catch {
+      return defaults;
+    }
+  },
+};
+
+// =============================================
 // NEWS API
 // =============================================
 
@@ -334,14 +442,20 @@ export const adminApi = {
     };
   },
 
-  async approveDeposit(id: string): Promise<boolean> {
-    const result = await request(`/admin/deposits/${id}/approve`, { method: 'POST' });
-    return result.success;
+  async approveDeposit(id: string, reason: string): Promise<{ success: boolean; error?: string }> {
+    const result = await request(`/admin/deposits/${id}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+    return { success: result.success, error: result.error };
   },
 
-  async rejectDeposit(id: string): Promise<boolean> {
-    const result = await request(`/admin/deposits/${id}/reject`, { method: 'POST' });
-    return result.success;
+  async rejectDeposit(id: string, reason: string): Promise<{ success: boolean; error?: string }> {
+    const result = await request(`/admin/deposits/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+    return { success: result.success, error: result.error };
   },
 
   async getPendingWithdrawals(page = 1, limit = 20): Promise<{ withdrawals: any[]; total: number }> {
@@ -352,22 +466,44 @@ export const adminApi = {
     };
   },
 
-  async approveWithdraw(id: string): Promise<boolean> {
-    const result = await request(`/admin/withdrawals/${id}/approve`, { method: 'POST' });
-    return result.success;
-  },
-
-  async rejectWithdraw(id: string): Promise<boolean> {
-    const result = await request(`/admin/withdrawals/${id}/reject`, { method: 'POST' });
-    return result.success;
-  },
-
-  async adjustBalance(userId: string, amount: number, action: 'add' | 'subtract', note: string): Promise<boolean> {
-    const result = await request('/admin/wallet/adjust', {
+  async approveWithdraw(id: string, reason: string): Promise<{ success: boolean; error?: string }> {
+    const result = await request(`/admin/withdrawals/${id}/approve`, {
       method: 'POST',
-      body: JSON.stringify({ userId, amount, action, note }),
+      body: JSON.stringify({ reason }),
     });
-    return result.success;
+    return { success: result.success, error: result.error };
+  },
+
+  async rejectWithdraw(id: string, reason: string): Promise<{ success: boolean; error?: string }> {
+    const result = await request(`/admin/withdrawals/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+    return { success: result.success, error: result.error };
+  },
+
+  async adjustBalance(
+    userId: string,
+    amount: number,
+    action: 'add' | 'subtract',
+    note: string
+  ): Promise<{ success: boolean; error?: string; reference?: string; newBalance?: number; oldBalance?: number }> {
+    const result = await request<{ reference: string; newBalance: number; oldBalance: number }>(
+      '/admin/wallet/adjust',
+      {
+        method: 'POST',
+        body: JSON.stringify({ userId, amount, action, note }),
+      }
+    );
+    if (!result.success) {
+      return { success: false, error: result.error || 'Điều chỉnh thất bại' };
+    }
+    return {
+      success: true,
+      reference: result.data?.reference,
+      newBalance: result.data?.newBalance,
+      oldBalance: result.data?.oldBalance,
+    };
   },
 
   async getAllTransactions(page = 1, limit = 20, type?: string): Promise<{ transactions: any[]; total: number }> {
@@ -504,5 +640,230 @@ export const chatApi = {
   async adminCloseConversation(conversationId: string): Promise<boolean> {
     const result = await request(`/admin/chat/conversations/${conversationId}/close`, { method: 'POST' });
     return result.success;
+  },
+};
+
+// =============================================
+// REFERRAL API
+// =============================================
+
+export interface ReferralStats {
+  referralCode: string;
+  referralCount: number;
+  totalEarnings: number;
+  pendingCount: number;
+  pendingAmount: number;
+  referredUsers: ReferredUser[];
+}
+
+export interface ReferredUser {
+  id: string;
+  full_name: string;
+  phone: string;
+  created_at: string;
+  total_bonus: number;
+  bonus_count: number;
+}
+
+export interface ReferralBonus {
+  id: string;
+  referrer_id: string;
+  referred_id: string;
+  investment_id: string | null;
+  bonus_amount: number;
+  bonus_type: 'signup' | 'first_investment' | 'milestone';
+  status: 'pending' | 'credited' | 'cancelled' | 'expired';
+  description: string;
+  created_at: string;
+  credited_at: string | null;
+  referred_user_name?: string;
+  referred_user_phone?: string;
+}
+
+export const referralApi = {
+  async getStats(): Promise<ReferralStats | null> {
+    const result = await request<ReferralStats>('/referrals/stats');
+    return result.success ? result.data! : null;
+  },
+
+  async getBonuses(page = 1, limit = 20): Promise<{ bonuses: ReferralBonus[]; total: number }> {
+    const result = await request<{ bonuses: ReferralBonus[]; total: number }>(
+      `/referrals/bonuses?page=${page}&limit=${limit}`
+    );
+    return result.success ? result.data! : { bonuses: [], total: 0 };
+  },
+
+  async claimBonus(bonusId: string): Promise<{ success: boolean; error?: string }> {
+    const result = await request(`/referrals/claim-bonus/${bonusId}`, { method: 'POST' });
+    return { success: result.success, error: result.error };
+  },
+
+  async getReferredUsers(page = 1, limit = 20): Promise<{ users: ReferredUser[]; total: number }> {
+    const result = await request<{ users: ReferredUser[]; total: number }>(
+      `/referrals/referred-users?page=${page}&limit=${limit}`
+    );
+    return result.success ? result.data! : { users: [], total: 0 };
+  },
+
+  async validateCode(code: string): Promise<{ valid: boolean; referrerName?: string; error?: string }> {
+    const result = await request<{ valid: boolean; referrerName: string }>('/referrals/validate-code', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    });
+    return result.success ? result.data! : { valid: false, error: result.error };
+  },
+};
+
+// =============================================
+// REINVESTMENT API
+// =============================================
+
+export interface ReinvestmentInvestment {
+  id: string;
+  user_id: string;
+  package_id: string;
+  package_name: string;
+  package_type: string;
+  image_url?: string;
+  package_default_amount: number;
+  min_investment?: number;
+  max_investment?: number;
+  amount: number;
+  daily_profit: number;
+  accumulated_profit: number;
+  start_date: string;
+  end_date: string;
+  status: 'active' | 'completed' | 'paused';
+  reference: string;
+  daysRemaining: number;
+  canReinvest: boolean;
+  isMatured: boolean;
+  availableProfit: number;
+}
+
+export interface ReinvestmentPackage {
+  id: string;
+  slug: string;
+  name: string;
+  type: string;
+  power?: string;
+  category: string;
+  daily_profit: number;
+  investment_period: number;
+  investment_amount: number;
+  min_investment?: number;
+  max_investment?: number;
+  image_url?: string;
+  description?: string;
+  status: string;
+}
+
+export interface ReinvestmentPreview {
+  originalInvestment: {
+    id: string;
+    amount: number;
+    accumulatedProfit: number;
+  };
+  newInvestment: {
+    packageId: string;
+    packageName: string;
+    totalAmount: number;
+    profitUsed: number;
+    cashAdded: number;
+    dailyProfit: string;
+    investmentPeriod: number;
+    totalProfit: string;
+    startDate: string;
+    endDate: string;
+  };
+  summary: {
+    profitRemaining: number;
+    expectedROI: string;
+    dailyProfitRate: number;
+  };
+}
+
+export interface ReinvestmentHistory {
+  id: string;
+  user_id: string;
+  original_investment_id: string;
+  new_investment_id: string;
+  amount: number;
+  profit_used: number;
+  cash_added: number;
+  package_id: string;
+  package_name?: string;
+  package_type?: string;
+  original_reference?: string;
+  original_amount?: number;
+  new_reference?: string;
+  new_amount?: number;
+  status: string;
+  created_at: string;
+}
+
+export const reinvestmentApi = {
+  async getMyInvestments(): Promise<ReinvestmentInvestment[]> {
+    const result = await request<{ investments: ReinvestmentInvestment[] }>('/reinvestments/my-investments');
+    return result.success ? (result.data?.investments || []) : [];
+  },
+
+  async getOptions(investmentId: string): Promise<{
+    investment: ReinvestmentInvestment;
+    packages: ReinvestmentPackage[];
+    availableProfit: number;
+    canUseFullProfit: boolean;
+  } | null> {
+    const result = await request<any>(`/reinvestments/options/${investmentId}`);
+    return result.success ? result.data : null;
+  },
+
+  async preview(investmentId: string, packageId: string, profitToUse: number, cashToAdd: number): Promise<ReinvestmentPreview | null> {
+    const result = await request<ReinvestmentPreview>('/reinvestments/preview', {
+      method: 'POST',
+      body: JSON.stringify({ investmentId, packageId, profitToUse, cashToAdd }),
+    });
+    return result.success ? result.data : null;
+  },
+
+  async execute(investmentId: string, packageId: string, profitToUse: number, cashToAdd: number): Promise<{
+    success: boolean;
+    newInvestmentId?: string;
+    newInvestment?: any;
+    error?: string;
+  }> {
+    const result = await request<any>('/reinvestments/execute', {
+      method: 'POST',
+      body: JSON.stringify({ investmentId, packageId, profitToUse, cashToAdd }),
+    });
+    return {
+      success: result.success,
+      newInvestmentId: result.data?.newInvestmentId,
+      newInvestment: result.data?.newInvestment,
+      error: result.error,
+    };
+  },
+
+  async getHistory(page = 1, limit = 20): Promise<{
+    history: ReinvestmentHistory[];
+    total: number;
+    stats: {
+      totalReinvestments: number;
+      totalAmount: number;
+      totalProfitUsed: number;
+      totalCashAdded: number;
+    };
+  }> {
+    const result = await request<any>(`/reinvestments/history?page=${page}&limit=${limit}`);
+    return result.success ? result.data : {
+      history: [],
+      total: 0,
+      stats: { totalReinvestments: 0, totalAmount: 0, totalProfitUsed: 0, totalCashAdded: 0 },
+    };
+  },
+
+  async getPackages(): Promise<ReinvestmentPackage[]> {
+    const result = await request<{ packages: ReinvestmentPackage[] }>('/reinvestments/packages');
+    return result.success ? (result.data?.packages || []) : [];
   },
 };

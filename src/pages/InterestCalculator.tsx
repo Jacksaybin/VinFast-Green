@@ -2,17 +2,25 @@
  * Interest Calculator page component - Interest rate calculation and comparison
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, TrendingUp, Shield, Clock, Star, Calculator, Info } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import Header from '../components/Header';
 import BottomNavigation from '../components/BottomNavigation';
 import LiveChat from '../components/LiveChat';
+import { usePackageStore } from '../stores/packageStore';
 
 const InterestCalculator: React.FC = () => {
   const navigate = useNavigate();
   const [selectedPackage, setSelectedPackage] = useState<string>('');
   const [investmentAmount, setInvestmentAmount] = useState<number>(50000000);
+
+  const packages = usePackageStore((s) => s.packages);
+  const loadPackages = usePackageStore((s) => s.load);
+
+  useEffect(() => {
+    loadPackages();
+  }, [loadPackages]);
 
   // Interest rate calculation helper
   const calculateInterestRates = (dailyRate: number, period: number) => {
@@ -27,27 +35,15 @@ const InterestCalculator: React.FC = () => {
     };
   };
 
-  // Investment packages for calculation
-  const packages = [
-    { name: 'DC 60kW Basic', daily: 0.2, period: 30, amount: 50000000 },
-    { name: 'Thẻ VinGroup', daily: 0.25, period: 45, amount: 150000000 },
-    { name: 'Gói Thường', daily: 0.3, period: 45, amount: 300000000 },
-    { name: 'Gói VIP', daily: 0.35, period: 60, amount: 500000000 },
-    { name: 'DC 80kW', daily: 0.5, period: 90, amount: 1000000000 },
-    { name: 'DC 120kW', daily: 0.6, period: 90, amount: 2000000000 },
-    { name: 'VIC01', daily: 1.0, period: 180, amount: 25000000000 },
-    { name: 'VIC25', daily: 2.2, period: 365, amount: 150000000000 }
-  ];
-
   /**
    * Calculate profit based on selected package and amount
    */
-  const calculateProfit = (packageName: string, amount: number) => {
-    const pkg = packages.find(p => p.name === packageName);
+  const calculateProfit = (packageId: string, amount: number) => {
+    const pkg = packages.find(p => p.id === packageId);
     if (!pkg) return null;
     
-    const dailyProfit = (amount * pkg.daily) / 100;
-    const totalProfit = dailyProfit * pkg.period;
+    const dailyProfit = (amount * pkg.dailyProfit) / 100;
+    const totalProfit = dailyProfit * pkg.investmentPeriod;
     
     return {
       dailyProfit,
@@ -57,7 +53,7 @@ const InterestCalculator: React.FC = () => {
     };
   };
 
-  const selectedPkg = packages.find(p => p.name === selectedPackage);
+  const selectedPkg = packages.find(p => p.id === selectedPackage);
   const profitCalculation = selectedPackage ? calculateProfit(selectedPackage, investmentAmount) : null;
 
   return (
@@ -113,8 +109,8 @@ const InterestCalculator: React.FC = () => {
               >
                 <option value="">-- Chọn gói đầu tư --</option>
                 {packages.map(pkg => (
-                  <option key={pkg.name} value={pkg.name}>
-                    {pkg.name} - {pkg.daily}%/ngày - {pkg.period} ngày
+                  <option key={pkg.id} value={pkg.id}>
+                    {pkg.name} - {pkg.dailyProfit}%/ngày - {pkg.investmentPeriod} ngày
                   </option>
                 ))}
               </select>
@@ -130,11 +126,11 @@ const InterestCalculator: React.FC = () => {
                 onChange={(e) => setInvestmentAmount(Number(e.target.value))}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 placeholder="Nhập số tiền đầu tư"
-                min={selectedPkg?.amount || 50000000}
+                min={selectedPkg?.investmentAmount || 50000000}
               />
               {selectedPkg && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Tối thiểu: {selectedPkg.amount.toLocaleString()} VND
+                  Tối thiểu: {selectedPkg.investmentAmount.toLocaleString()} VND
                 </p>
               )}
             </div>
@@ -202,20 +198,20 @@ const InterestCalculator: React.FC = () => {
               </thead>
               <tbody>
                 {packages.map((pkg, index) => {
-                  const rates = calculateInterestRates(pkg.daily, pkg.period);
+                  const rates = calculateInterestRates(pkg.dailyProfit, pkg.investmentPeriod);
                   return (
                     <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 px-2">
                         <div className="font-medium text-gray-900 text-xs">{pkg.name}</div>
                         <div className="text-xs text-gray-500">
-                          {pkg.amount >= 1000000000 
-                            ? `${(pkg.amount / 1000000000).toFixed(0)}B` 
-                            : `${(pkg.amount / 1000000).toFixed(0)}M`
+                          {pkg.investmentAmount >= 1000000000 
+                            ? `${(pkg.investmentAmount / 1000000000).toFixed(0)}B` 
+                            : `${(pkg.investmentAmount / 1000000).toFixed(0)}M`
                           }
                         </div>
                       </td>
                       <td className="text-center py-3 px-2">
-                        <div className="font-semibold text-green-600">{pkg.daily}%</div>
+                        <div className="font-semibold text-green-600">{pkg.dailyProfit}%</div>
                       </td>
                       <td className="text-center py-3 px-2">
                         <div className="font-semibold text-blue-600">{rates.monthly.toFixed(1)}%</div>
@@ -225,7 +221,7 @@ const InterestCalculator: React.FC = () => {
                       </td>
                       <td className="text-center py-3 px-2">
                         <div className="font-bold text-red-600">{rates.totalReturn.toFixed(1)}%</div>
-                        <div className="text-xs text-gray-500">{pkg.period}d</div>
+                        <div className="text-xs text-gray-500">{pkg.investmentPeriod}d</div>
                       </td>
                     </tr>
                   );

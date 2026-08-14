@@ -8,7 +8,8 @@ import {
   MoreVertical, Eye, Trash2, Plus, RefreshCw, Settings,
   Bell, FileText, ToggleLeft, ToggleRight, Clock, Menu, X,
   ChevronRight, Activity, AlertCircle, Check, AlertTriangle, Paintbrush,
-  CreditCard, Wallet, TrendingDown, RefreshCcw, MessageSquare, Send, User, FileText
+  CreditCard, Wallet, TrendingDown, RefreshCcw, MessageSquare, Send, User,
+  FileCheck
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import Header from '../components/Header';
@@ -16,6 +17,10 @@ import BottomNavigation from '../components/BottomNavigation';
 import { useAuthStore } from '../stores/authStore';
 import { formatCurrency } from '../lib/format';
 import { adminApi, chatApi, newsApi, ApiChatConversation, ApiChatMessage } from '../lib/api';
+import AdminSettings from './AdminSettings';
+import AdminAudit from './AdminAudit';
+import AdminKyc from './AdminKyc';
+import ConfirmActionModal, { ConfirmActionVariant } from '../components/admin/ConfirmActionModal';
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
@@ -26,6 +31,17 @@ const Admin: React.FC = () => {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [modalError, setModalError] = useState('');
+  const [actionModal, setActionModal] = useState<{
+    open: boolean;
+    variant: ConfirmActionVariant;
+    txId?: string;
+    txType?: 'deposit' | 'withdraw';
+    reference?: string;
+    amount?: string;
+    userName?: string;
+    userPhone?: string;
+  }>({ open: false, variant: 'approve', txType: 'deposit' });
   const [adminStats, setAdminStats] = useState({
     totalUsers: 0, totalInvestment: 0, totalProfit: 0,
     pendingDeposits: 0, pendingWithdrawals: 0,
@@ -53,6 +69,7 @@ const Admin: React.FC = () => {
   const [adjustLoading, setAdjustLoading] = useState(false);
   const [adjustError, setAdjustError] = useState('');
   const [adjustSuccess, setAdjustSuccess] = useState('');
+  const [adjustModalOpen, setAdjustModalOpen] = useState(false);
 
   // Recent transactions for dashboard
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
@@ -124,31 +141,88 @@ const Admin: React.FC = () => {
   };
 
   const handleApproveDeposit = async (txId: string) => {
-    setLoading(true);
-    const ok = await adminApi.approveDeposit(txId);
-    if (ok) await loadData();
-    setLoading(false);
+    const tx = pendingDeposits.find((d) => d.id === txId);
+    setActionModal({
+      open: true,
+      variant: 'approve',
+      txId,
+      amount: tx ? formatCurrency(parseFloat(tx.amount)) : undefined,
+      reference: tx?.reference,
+      userName: tx?.full_name,
+      userPhone: tx?.phone,
+      txType: 'deposit',
+    });
   };
 
   const handleRejectDeposit = async (txId: string) => {
-    setLoading(true);
-    const ok = await adminApi.rejectDeposit(txId);
-    if (ok) await loadData();
-    setLoading(false);
+    const tx = pendingDeposits.find((d) => d.id === txId);
+    setActionModal({
+      open: true,
+      variant: 'reject',
+      txId,
+      amount: tx ? formatCurrency(parseFloat(tx.amount)) : undefined,
+      reference: tx?.reference,
+      userName: tx?.full_name,
+      userPhone: tx?.phone,
+      txType: 'deposit',
+    });
   };
 
   const handleApproveWithdraw = async (txId: string) => {
-    setLoading(true);
-    const ok = await adminApi.approveWithdraw(txId);
-    if (ok) await loadData();
-    setLoading(false);
+    const tx = pendingWithdrawals.find((d) => d.id === txId);
+    setActionModal({
+      open: true,
+      variant: 'approve',
+      txId,
+      amount: tx ? formatCurrency(parseFloat(tx.amount)) : undefined,
+      reference: tx?.reference,
+      userName: tx?.full_name,
+      userPhone: tx?.phone,
+      txType: 'withdraw',
+    });
   };
 
   const handleRejectWithdraw = async (txId: string) => {
+    const tx = pendingWithdrawals.find((d) => d.id === txId);
+    setActionModal({
+      open: true,
+      variant: 'reject',
+      txId,
+      amount: tx ? formatCurrency(parseFloat(tx.amount)) : undefined,
+      reference: tx?.reference,
+      userName: tx?.full_name,
+      userPhone: tx?.phone,
+      txType: 'withdraw',
+    });
+  };
+
+  // Confirm handler invoked from modal
+  const submitActionModal = async (reason: string): Promise<boolean> => {
+    if (!actionModal.open || !actionModal.txId) return false;
     setLoading(true);
-    const ok = await adminApi.rejectWithdraw(txId);
-    if (ok) await loadData();
+    setModalError('');
+    const fn =
+      actionModal.txType === 'deposit'
+        ? actionModal.variant === 'approve'
+          ? adminApi.approveDeposit
+          : adminApi.rejectDeposit
+        : actionModal.variant === 'approve'
+        ? adminApi.approveWithdraw
+        : adminApi.rejectWithdraw;
+
+    const result = await fn(actionModal.txId, reason);
     setLoading(false);
+    if (!result.success) {
+      setModalError(result.error || 'Thao tác thất bại');
+      return false;
+    }
+    await loadData();
+    return true;
+  };
+
+  const closeActionModal = () => {
+    setActionModal({ open: false, variant: 'approve', txType: 'deposit' });
+    setModalError('');
   };
 
   const navItems = [
@@ -157,9 +231,11 @@ const Admin: React.FC = () => {
     { id: 'withdrawals', label: 'Duyệt rút tiền', icon: Wallet },
     { id: 'chat', label: 'Chat hỗ trợ', icon: MessageSquare },
     { id: 'users', label: 'Người dùng', icon: Users },
+    { id: 'kyc', label: 'Duyệt KYC', icon: FileCheck },
     { id: 'packages', label: 'Gói đầu tư', icon: Package },
     { id: 'news', label: 'Tin tức', icon: FileText },
     { id: 'transactions', label: 'Giao dịch', icon: DollarSign },
+    { id: 'audit', label: 'Nhật ký', icon: Activity },
     { id: 'settings', label: 'Cài đặt', icon: Settings },
   ];
 
@@ -260,29 +336,54 @@ const Admin: React.FC = () => {
     setLoading(false);
   };
 
-  const handleAdjustBalance = async () => {
+  const openAdjustModal = () => {
     if (!selectedUser || !adjustAmount || !adjustNote.trim()) return;
+
+    const numAmount = parseFloat(adjustAmount);
+    if (!Number.isFinite(numAmount) || numAmount < 1000) {
+      setAdjustError('Số tiền phải từ 1.000 VNĐ trở lên');
+      return;
+    }
+    if (numAmount > 50_000_000) {
+      setAdjustError('Số tiền tối đa 50.000.000 VNĐ/lần điều chỉnh');
+      return;
+    }
+
+    setAdjustModalOpen(true);
+  };
+
+  const submitAdjustModal = async (): Promise<boolean> => {
+    if (!selectedUser) return false;
     setAdjustLoading(true);
     setAdjustError('');
     setAdjustSuccess('');
-    const ok = await adminApi.adjustBalance(
+    const result = await adminApi.adjustBalance(
       selectedUser.id,
       parseFloat(adjustAmount),
       adjustAction,
       adjustNote.trim()
     );
-    if (ok) {
-      setAdjustSuccess('Đã điều chỉnh số dư thành công');
-      setAdjustAmount('');
-      setAdjustNote('');
-      setTimeout(() => {
-        setSelectedUser(null);
-        setAdjustSuccess('');
-      }, 1500);
-    } else {
-      setAdjustError('Điều chỉnh thất bại');
-    }
     setAdjustLoading(false);
+    if (!result.success) {
+      setAdjustError(result.error || 'Điều chỉnh thất bại');
+      return false;
+    }
+    setAdjustSuccess(
+      `Đã điều chỉnh. Số dư: ${(result.oldBalance ?? 0).toLocaleString('vi-VN')} → ${(result.newBalance ?? 0).toLocaleString('vi-VN')} ₫ (Mã: ${result.reference})`
+    );
+    setAdjustAmount('');
+    setAdjustNote('');
+    setTimeout(() => {
+      setSelectedUser(null);
+      setAdjustModalOpen(false);
+      setAdjustSuccess('');
+    }, 2500);
+    return true;
+  };
+
+  const closeAdjustModal = () => {
+    setAdjustModalOpen(false);
+    setAdjustError('');
   };
 
   const handleUserSearch = (e: React.FormEvent) => {
@@ -777,16 +878,33 @@ const Admin: React.FC = () => {
                     value={adjustAmount}
                     onChange={(e) => setAdjustAmount(e.target.value)}
                     placeholder="Số tiền (VNĐ)"
+                    min="1000"
+                    max="50000000"
+                    step="1000"
                     className="w-full px-3 py-2 border rounded-lg text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
 
                   <textarea
                     value={adjustNote}
                     onChange={(e) => setAdjustNote(e.target.value)}
-                    placeholder="Lý do (bắt buộc)"
+                    placeholder="Lý do (bắt buộc, tối thiểu 10 ký tự)"
                     rows={2}
-                    className="w-full px-3 py-2 border rounded-lg text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                    minLength={10}
+                    maxLength={500}
+                    className="w-full px-3 py-2 border rounded-lg text-sm mb-1 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
                   />
+                  <p className="text-[10px] text-gray-400 mb-3 text-right">
+                    {adjustNote.trim().length}/500 · tối thiểu 10 ký tự
+                  </p>
+
+                  {parseFloat(adjustAmount) >= 10_000_000 && (
+                    <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-2 mb-3">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-amber-800">
+                        Số tiền ≥ 10 triệu — bạn sẽ cần nhập cụm từ xác nhận ở bước tiếp theo.
+                      </p>
+                    </div>
+                  )}
 
                   {adjustError && (
                     <p className="text-red-600 text-sm mb-2">{adjustError}</p>
@@ -803,8 +921,8 @@ const Admin: React.FC = () => {
                       Hủy
                     </button>
                     <button
-                      onClick={handleAdjustBalance}
-                      disabled={adjustLoading || !adjustAmount || !adjustNote.trim()}
+                      onClick={openAdjustModal}
+                      disabled={adjustLoading || !adjustAmount || adjustNote.trim().length < 10}
                       className="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50"
                     >
                       {adjustLoading ? 'Đang xử lý...' : 'Xác nhận'}
@@ -1025,18 +1143,25 @@ const Admin: React.FC = () => {
             ) : (
               <>
                 <div className="space-y-3">
-                  {allTransactions.map((tx) => (
-                    <div key={tx.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                      <div>
+                  {allTransactions.map((tx) => {
+                    const reason = tx.metadata?.reason || (typeof tx.metadata === 'string' ? (() => { try { return JSON.parse(tx.metadata).reason; } catch { return null; } })() : null);
+                    return (
+                    <div key={tx.id} className="flex items-start justify-between py-2 border-b border-gray-50 last:border-0 gap-3">
+                      <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-gray-900">
                           {tx.type === 'deposit' ? 'Nạp tiền' : tx.type === 'withdraw' ? 'Rút tiền' : tx.type}
                         </p>
                         <p className="text-xs text-gray-400">{tx.reference}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 truncate">
                           {(tx as any).full_name || (tx as any).phone || ''}
                         </p>
+                        {reason && (
+                          <p className="text-xs text-gray-500 mt-1 italic line-clamp-2" title={reason}>
+                            <span className="text-gray-400">Lý do:</span> {reason}
+                          </p>
+                        )}
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex-shrink-0">
                         <p className={`text-sm font-bold ${tx.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>
                           {tx.type === 'deposit' ? '+' : '-'}{formatCurrency(tx.amount)}
                         </p>
@@ -1047,9 +1172,15 @@ const Admin: React.FC = () => {
                         }`}>
                           {tx.status === 'completed' ? 'Hoàn thành' : tx.status === 'pending' ? 'Chờ duyệt' : 'Thất bại'}
                         </span>
+                        {tx.processed_at && (
+                          <p className="text-[10px] text-gray-400 mt-1">
+                            {new Date(tx.processed_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
+                          </p>
+                        )}
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 {txTotal > 20 && (
                   <div className="flex items-center justify-center gap-2 mt-4">
@@ -1212,18 +1343,68 @@ const Admin: React.FC = () => {
         )}
 
         {/* Settings */}
-        {activeModule === 'settings' && (
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <h3 className="font-semibold text-gray-900 mb-4">Cài đặt hệ thống</h3>
-            <div className="text-center py-8">
-              <Settings className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-              <p className="text-gray-500 text-sm">Quản lý cài đặt hệ thống</p>
-            </div>
-          </div>
-        )}
+        {activeModule === 'settings' && <AdminSettings />}
+
+        {/* Audit logs */}
+        {activeModule === 'audit' && <AdminAudit />}
+
+        {/* KYC review */}
+        {activeModule === 'kyc' && <AdminKyc />}
       </div>
 
       <BottomNavigation />
+
+      {/* Confirm action modal — bắt buộc nhập lý do */}
+      <ConfirmActionModal
+        open={actionModal.open}
+        variant={actionModal.variant}
+        txReference={actionModal.reference}
+        txAmount={actionModal.amount}
+        userName={actionModal.userName}
+        userPhone={actionModal.userPhone}
+        onConfirm={submitActionModal}
+        onClose={closeActionModal}
+        loading={loading}
+      />
+
+      {/* Adjust balance modal — yêu cầu double-confirm nếu amount >= 10 triệu */}
+      <ConfirmActionModal
+        open={adjustModalOpen}
+        variant={adjustAction === 'add' ? 'approve' : 'reject'}
+        title={
+          adjustAction === 'add'
+            ? `Xác nhận cộng ${formatCurrency(parseFloat(adjustAmount) || 0)}`
+            : `Xác nhận trừ ${formatCurrency(parseFloat(adjustAmount) || 0)}`
+        }
+        description={
+          selectedUser
+            ? `Điều chỉnh số dư cho ${selectedUser.fullName || selectedUser.phone}`
+            : undefined
+        }
+        userName={selectedUser?.fullName}
+        userPhone={selectedUser?.phone}
+        txAmount={adjustAmount ? formatCurrency(parseFloat(adjustAmount)) : undefined}
+        requirePhrase={
+          parseFloat(adjustAmount) >= 10_000_000
+            ? `XÁC NHẬN ${adjustAction === 'add' ? 'CỘNG' : 'TRỪ'}`
+            : undefined
+        }
+        minLength={10}
+        onConfirm={async () => {
+          const ok = await submitAdjustModal();
+          return ok;
+        }}
+        onClose={closeAdjustModal}
+        loading={adjustLoading}
+      />
+
+      {/* Toast error nổi (ngoài modal) */}
+      {modalError && !actionModal.open && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-red-600 text-white text-sm px-4 py-2 rounded-full shadow-lg z-40">
+          {modalError}
+          <button onClick={() => setModalError('')} className="ml-2 font-bold">×</button>
+        </div>
+      )}
     </div>
   );
 };

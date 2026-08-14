@@ -2,16 +2,16 @@
  * Investment page component - Investment packages and investment management
  */
 
-import React, { useState } from 'react';
-import { ArrowLeft, Plus, Filter, Search, Award, Zap } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowLeft, Filter, Search, Award, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import Header from '../components/Header';
 import BottomNavigation from '../components/BottomNavigation';
 import InvestmentCard from '../components/InvestmentCard';
 import InvestmentForm from '../components/InvestmentForm';
 import LiveChat from '../components/LiveChat';
-import { investmentPackages, getCategoryStats } from '../data/investmentPackages';
 import { InvestmentPackage as PkgType } from '../types';
+import { usePackageStore } from '../stores/packageStore';
 
 /**
  * Investment - allows users to browse and filter investment packages
@@ -21,6 +21,14 @@ const Investment: React.FC = () => {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'premium' | 'standard' | 'basic'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPkg, setSelectedPkg] = useState<PkgType | null>(null);
+
+  const packages = usePackageStore((s) => s.packages);
+  const getCategoryStats = usePackageStore((s) => s.getCategoryStats);
+  const loadPackages = usePackageStore((s) => s.load);
+
+  useEffect(() => {
+    loadPackages();
+  }, [loadPackages]);
 
   // Category stats for overview cards
   const categoryStats = getCategoryStats();
@@ -55,7 +63,7 @@ const Investment: React.FC = () => {
   /**
    * Filter packages by search text and selected category
    */
-  const filteredPackages = investmentPackages.filter((pkg) => {
+  const filteredPackages = packages.filter((pkg) => {
     const matchesSearch =
       pkg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       pkg.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -203,9 +211,6 @@ const Investment: React.FC = () => {
                   : `Gói ${selectedFilter.charAt(0).toUpperCase() + selectedFilter.slice(1)}`}
               </p>
             </div>
-            <button className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 transition-colors">
-              <Plus className="w-5 h-5" />
-            </button>
           </div>
 
           <div className="space-y-4">

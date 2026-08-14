@@ -7,8 +7,11 @@ import { AuthRequest } from './auth';
 
 export type AuditAction =
   | 'login'
+  | 'login_failed'
+  | 'login_locked'
   | 'logout'
   | 'register'
+  | 'password_changed'
   | 'deposit_request'
   | 'deposit_approved'
   | 'deposit_rejected'
@@ -20,7 +23,11 @@ export type AuditAction =
   | 'kyc_submitted'
   | 'kyc_approved'
   | 'kyc_rejected'
-  | 'user_status_changed';
+  | 'user_status_changed'
+  | 'news_created'
+  | 'news_updated'
+  | 'news_deleted'
+  | 'package_updated';
 
 export interface AuditLogParams {
   userId?: string;

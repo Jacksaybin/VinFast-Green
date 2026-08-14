@@ -6,7 +6,8 @@
 import React, { useEffect, useState } from 'react';
 import {
   ArrowLeft, Wallet, TrendingUp, Clock, BarChart3, ChevronRight,
-  Plus, PiggyBank, Gift, Eye, ArrowUpRight, ArrowDownRight, RefreshCw
+  Plus, PiggyBank, Gift, Eye, ArrowUpRight, ArrowDownRight, RefreshCw,
+  Users
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '../stores/authStore';
@@ -21,13 +22,14 @@ const MyAccount: React.FC = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const { balance, lockedBalance, refresh: refreshWallet } = useWalletStore();
+  const { balance, lockedBalance, transactions, refresh: refreshWallet } = useWalletStore();
   const { investments, refresh: refreshInvestments, getUserInvestments, getActiveInvestments, getTotalInvested, getTotalProfit } = useInvestmentStore();
-  const { seedWelcomeNotifications, getUserNotifications, markAsRead } = useNotificationStore();
+  const { seedWelcomeNotifications, refresh: refreshNotifications, getUserNotifications, markAsRead } = useNotificationStore();
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (user) {
+      refreshNotifications();
       seedWelcomeNotifications(user.id);
     }
   }, [user?.id]);
@@ -35,6 +37,7 @@ const MyAccount: React.FC = () => {
   const handleRefresh = async () => {
     setRefreshing(true);
     await Promise.all([refreshWallet(), refreshInvestments()]);
+    if (user) refreshNotifications();
     setRefreshing(false);
   };
 
@@ -249,7 +252,7 @@ const MyAccount: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {activeInvestments.slice(0, 3).map((inv) => {
+              {activeInvestments.map((inv) => {
                 const daysLeft = Math.max(
                   0,
                   Math.ceil(
@@ -310,15 +313,6 @@ const MyAccount: React.FC = () => {
                   </div>
                 );
               })}
-
-              {activeInvestments.length > 3 && (
-                <button
-                  onClick={() => navigate('/transactions')}
-                  className="w-full text-center text-sm text-green-600 hover:underline py-2"
-                >
-                  Xem tất cả ({activeInvestments.length} gói)
-                </button>
-              )}
             </div>
           )}
         </div>
@@ -337,13 +331,51 @@ const MyAccount: React.FC = () => {
               Xem tất cả <ChevronRight className="w-3 h-3" />
             </button>
           </div>
-          <button
-            onClick={() => navigate('/investment')}
-            className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-200 rounded-lg text-gray-500 hover:border-green-400 hover:text-green-600 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="text-sm font-medium">Đầu tư ngay</span>
-          </button>
+
+          {transactions.length === 0 ? (
+            <button
+              onClick={() => navigate('/investment')}
+              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-200 rounded-lg text-gray-500 hover:border-green-400 hover:text-green-600 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="text-sm font-medium">Đầu tư ngay</span>
+            </button>
+          ) : (
+            <div className="space-y-2">
+              {transactions.slice(0, 5).map((tx) => {
+                const isIn = tx.type === 'deposit' || tx.type === 'profit' || tx.type === 'bonus' || tx.type === 'referral' || tx.type === 'admin_credit';
+                const labels: Record<string, string> = {
+                  deposit: 'Nạp tiền',
+                  withdraw: 'Rút tiền',
+                  investment: 'Đầu tư',
+                  profit: 'Lợi nhuận',
+                  bonus: 'Thưởng',
+                  referral: 'Hoa hồng',
+                  admin_credit: 'Cộng tiền',
+                  admin_debit: 'Trừ tiền',
+                };
+                return (
+                  <div key={tx.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isIn ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                        {isIn ? <ArrowDownRight className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{labels[tx.type] || tx.type}</p>
+                        <p className="text-xs text-gray-400 truncate">{tx.reference}</p>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className={`text-sm font-bold ${isIn ? 'text-green-600' : 'text-red-600'}`}>
+                        {isIn ? '+' : '-'}{formatShortCurrency(tx.amount)}
+                      </p>
+                      <p className="text-xs text-gray-400">{formatDate(tx.createdAt)}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Menu Links */}
@@ -381,6 +413,30 @@ const MyAccount: React.FC = () => {
                 <Gift className="w-4 h-4 text-purple-600" />
               </div>
               <span className="font-medium text-gray-900">Phúc lợi & Thưởng</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-gray-400" />
+          </button>
+          <button
+            onClick={() => navigate('/referral')}
+            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-green-50 rounded-full flex items-center justify-center">
+                <Users className="w-4 h-4 text-green-600" />
+              </div>
+              <span className="font-medium text-gray-900">Giới thiệu bạn bè</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-gray-400" />
+          </button>
+          <button
+            onClick={() => navigate('/reinvest')}
+            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
+                <RefreshCw className="w-4 h-4 text-blue-600" />
+              </div>
+              <span className="font-medium text-gray-900">Tái đầu tư</span>
             </div>
             <ChevronRight className="w-4 h-4 text-gray-400" />
           </button>

@@ -5,7 +5,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authApi, setAuthToken, ApiUser } from '../lib/api';
+import { authApi, setAuthToken, setRefreshToken, ApiUser } from '../lib/api';
 
 export type UserRole = 'user' | 'admin';
 
@@ -18,6 +18,9 @@ export interface AuthUser {
   referralCode: string;
   referredBy?: string;
   kycStatus: 'none' | 'pending' | 'approved' | 'rejected';
+  bankAccount?: string;
+  bankName?: string;
+  bankBranch?: string;
   createdAt: string;
 }
 
@@ -36,7 +39,7 @@ interface AuthState {
   login: (phone: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (data: RegisterData) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  updateProfile: (data: Partial<AuthUser>) => void;
+  updateProfile: (data: Partial<AuthUser>) => Promise<void>;
   checkAuth: () => Promise<void>;
 }
 
@@ -74,8 +77,9 @@ export const useAuthStore = create<AuthState>()(
         // Try API first
         const apiResult = await authApi.login(phone, password);
 
-        if (apiResult.success && apiResult.user && apiResult.token) {
+if (apiResult.success && apiResult.user && apiResult.token) {
           setAuthToken(apiResult.token);
+          setRefreshToken(apiResult.refreshToken || null);
           const user: AuthUser = {
             id: apiResult.user.id,
             fullName: apiResult.user.fullName,
@@ -85,13 +89,15 @@ export const useAuthStore = create<AuthState>()(
             referralCode: apiResult.user.referralCode,
             referredBy: apiResult.user.referredBy,
             kycStatus: apiResult.user.kycStatus,
+            bankAccount: apiResult.user.bankAccount || undefined,
+            bankName: apiResult.user.bankName || undefined,
+            bankBranch: apiResult.user.bankBranch || undefined,
             createdAt: apiResult.user.createdAt,
           };
           set({ user, token: apiResult.token, isAuthenticated: true, isLoading: false });
           return { success: true };
         }
 
-        // Fallback: localStorage mock (khi backend offline)
         if (phone === MOCK_ADMIN.phone && password === MOCK_ADMIN.password) {
           const token = `token_admin_${Date.now()}`;
           set({ user: MOCK_ADMIN.user, token, isAuthenticated: true, isLoading: false });
@@ -130,6 +136,7 @@ export const useAuthStore = create<AuthState>()(
 
         if (apiResult.success && apiResult.user && apiResult.token) {
           setAuthToken(apiResult.token!);
+          setRefreshToken(apiResult.refreshToken || null);
           const user: AuthUser = {
             id: apiResult.user.id,
             fullName: apiResult.user.fullName,
@@ -139,6 +146,9 @@ export const useAuthStore = create<AuthState>()(
             referralCode: apiResult.user.referralCode,
             referredBy: apiResult.user.referredBy,
             kycStatus: 'none',
+            bankAccount: apiResult.user.bankAccount || undefined,
+            bankName: apiResult.user.bankName || undefined,
+            bankBranch: apiResult.user.bankBranch || undefined,
             createdAt: new Date().toISOString(),
           };
           set({ user, token: apiResult.token, isAuthenticated: true, isLoading: false });
@@ -190,13 +200,35 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         authApi.logout?.();
         setAuthToken(null);
+        setRefreshToken(null);
         set({ user: null, token: null, isAuthenticated: false });
       },
 
-      updateProfile: (data) => {
+      updateProfile: async (data) => {
         const current = get().user;
         if (!current) return;
+        // Optimistic local update
         set({ user: { ...current, ...data } });
+        // Persist to backend
+        try {
+          const updated = await authApi.updateProfile(data);
+          if (updated) {
+            set((state) => ({
+              user: state.user ? {
+                ...state.user,
+                fullName: updated.fullName,
+                email: updated.email || '',
+                referralCode: updated.referralCode,
+                kycStatus: updated.kycStatus,
+                ...(updated as any).bankAccount !== undefined && { bankAccount: (updated as any).bankAccount },
+                ...(updated as any).bankName !== undefined && { bankName: (updated as any).bankName },
+                ...(updated as any).bankBranch !== undefined && { bankBranch: (updated as any).bankBranch },
+              } : null,
+            }));
+          }
+        } catch {
+          // Backend offline - keep local update
+        }
       },
 
       checkAuth: async () => {
@@ -215,6 +247,9 @@ export const useAuthStore = create<AuthState>()(
             referralCode: profile.referralCode,
             referredBy: profile.referredBy,
             kycStatus: profile.kycStatus,
+            bankAccount: profile.bankAccount || undefined,
+            bankName: profile.bankName || undefined,
+            bankBranch: profile.bankBranch || undefined,
             createdAt: profile.createdAt,
           };
           set({ user, isAuthenticated: true });

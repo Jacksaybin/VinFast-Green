@@ -1,168 +1,157 @@
 /**
  * Personal Information page component - User profile management
+ * Dữ liệu thật từ authStore/backend, kèm đổi mật khẩu
  */
 
-import React, { useState } from 'react';
-import { ArrowLeft, User, Phone, Mail, MapPin, Calendar, Camera, Edit, Save, X, CheckCircle, AlertCircle, Shield, Eye, EyeOff } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowLeft, User, Phone, Mail, Camera, Edit, Save, X, CheckCircle, Eye, EyeOff, Lock, KeyRound } from 'lucide-react';
 import { useNavigate } from 'react-router';
-
-interface PersonalInfo {
-  fullName: string;
-  phone: string;
-  email: string;
-  dateOfBirth: string;
-  gender: 'male' | 'female' | 'other';
-  address: string;
-  city: string;
-  district: string;
-  ward: string;
-  occupation: string;
-  income: string;
-  bankAccount: string;
-  bankName: string;
-  idNumber: string;
-  idIssueDate: string;
-  idIssuePlace: string;
-}
+import { useAuthStore } from '../stores/authStore';
 
 const PersonalInfo: React.FC = () => {
   const navigate = useNavigate();
+  const { user, updateProfile } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<any>({});
 
-  // Mock user data
-  const [userInfo, setUserInfo] = useState<PersonalInfo>({
-    fullName: 'Nguyễn Văn A',
-    phone: '0901234567',
-    email: 'nguyenvana@email.com',
-    dateOfBirth: '1990-01-15',
-    gender: 'male',
-    address: '123 Nguyễn Huệ',
-    city: 'Hồ Chí Minh',
-    district: 'Quận 1',
-    ward: 'Phường Bến Nghé',
-    occupation: 'Kỹ sư phần mềm',
-    income: '20000000',
-    bankAccount: '1234567890',
-    bankName: 'Vietcombank',
-    idNumber: '123456789',
-    idIssueDate: '2015-01-01',
-    idIssuePlace: 'CA TP.HCM'
+  const [form, setForm] = useState({
+    fullName: '',
+    email: '',
+    bankAccount: '',
+    bankName: '',
+    bankBranch: '',
   });
 
-  const [originalInfo, setOriginalInfo] = useState<PersonalInfo>({ ...userInfo });
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  /**
-   * Handle input change
-   */
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setUserInfo(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+  useEffect(() => {
+    if (user) {
+      setForm({
+        fullName: user.fullName || '',
+        email: user.email || '',
+        bankAccount: (user as any).bankAccount || '',
+        bankName: (user as any).bankName || '',
+        bankBranch: (user as any).bankBranch || '',
+      });
     }
+  }, [user]);
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Vui lòng đăng nhập</p>
+      </div>
+    );
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev: any) => ({ ...prev, [name]: '' }));
   };
 
-  /**
-   * Validate form
-   */
   const validateForm = () => {
     const newErrors: any = {};
-
-    // Required fields validation
-    if (!userInfo.fullName.trim()) {
-      newErrors.fullName = 'Vui lòng nhập họ tên';
-    }
-
-    if (!userInfo.phone.trim()) {
-      newErrors.phone = 'Vui lòng nhập số điện thoại';
-    } else if (!/^[0-9]{10,11}$/.test(userInfo.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Số điện thoại không hợp lệ';
-    }
-
-    if (!userInfo.email.trim()) {
-      newErrors.email = 'Vui lòng nhập email';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userInfo.email)) {
+    if (!form.fullName.trim()) newErrors.fullName = 'Vui lòng nhập họ tên';
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       newErrors.email = 'Email không hợp lệ';
     }
-
-    if (!userInfo.dateOfBirth) {
-      newErrors.dateOfBirth = 'Vui lòng nhập ngày sinh';
-    }
-
-    if (!userInfo.address.trim()) {
-      newErrors.address = 'Vui lòng nhập địa chỉ';
-    }
-
-    if (!userInfo.idNumber.trim()) {
-      newErrors.idNumber = 'Vui lòng nhập số CMND/CCCD';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  /**
-   * Handle save changes
-   */
   const handleSave = async () => {
     if (!validateForm()) return;
-
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      setIsEditing(false);
-      setOriginalInfo({ ...userInfo });
-      
-      // Show success message
-      alert('Thông tin đã được cập nhật thành công!');
-    }, 1500);
+    setErrors({});
+
+    updateProfile({
+      fullName: form.fullName,
+      email: form.email,
+      bankAccount: form.bankAccount,
+      bankName: form.bankName,
+      bankBranch: form.bankBranch,
+    });
+
+    setIsLoading(false);
+    setIsEditing(false);
+    alert('Thông tin đã được cập nhật thành công!');
   };
 
-  /**
-   * Handle cancel editing
-   */
   const handleCancel = () => {
-    setUserInfo({ ...originalInfo });
+    if (user) {
+      setForm({
+        fullName: user.fullName || '',
+        email: user.email || '',
+        bankAccount: (user as any).bankAccount || '',
+        bankName: (user as any).bankName || '',
+        bankBranch: (user as any).bankBranch || '',
+      });
+    }
     setErrors({});
     setIsEditing(false);
   };
 
-  /**
-   * Format currency
-   */
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError('Mật khẩu mới phải có ít nhất 6 ký tự');
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('Mật khẩu xác nhận không khớp');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const { authApi } = await import('../lib/api');
+      const result = await authApi.changePassword(passwordForm.currentPassword, passwordForm.newPassword);
+      if (result.success) {
+        setPasswordSuccess('Đổi mật khẩu thành công');
+        setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      } else {
+        setPasswordError(result.error || 'Đổi mật khẩu thất bại');
+      }
+    } catch {
+      setPasswordError('Lỗi kết nối, vui lòng thử lại');
+    }
+    setIsChangingPassword(false);
+  };
+
   const formatCurrency = (amount: string) => {
     if (!amount) return '';
     return `${parseInt(amount).toLocaleString()} VND`;
   };
 
-  /**
-   * Get masked info
-   */
   const getMaskedInfo = (info: string, showCount = 4) => {
     if (!info) return '';
     if (showSensitive) return info;
-    return '*'.repeat(info.length - showCount) + info.slice(-showCount);
+    return '*'.repeat(Math.max(0, info.length - showCount)) + info.slice(-showCount);
   };
+
+  const inputClass = (hasError = false) =>
+    `w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+      hasError ? 'border-red-500' : 'border-gray-300'
+    }`;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white shadow-sm sticky top-0 z-10">
         <div className="flex items-center justify-between p-4">
-          <button 
+          <button
             onClick={() => navigate('/my-account')}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
@@ -180,7 +169,6 @@ const PersonalInfo: React.FC = () => {
         </div>
       </div>
 
-      {/* Hero Section */}
       <div className="relative h-32 bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="relative z-10 text-center px-4">
@@ -190,13 +178,12 @@ const PersonalInfo: React.FC = () => {
       </div>
 
       <div className="px-4 pb-6">
-        {/* Profile Picture */}
         <div className="bg-white rounded-xl shadow-sm p-6 -mt-6 relative z-10 mb-6">
           <div className="flex items-center space-x-4">
             <div className="relative">
               <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-2xl">
-                  {userInfo.fullName.charAt(0)}
+                  {form.fullName.charAt(0) || 'U'}
                 </span>
               </div>
               {isEditing && (
@@ -206,21 +193,26 @@ const PersonalInfo: React.FC = () => {
               )}
             </div>
             <div className="flex-1">
-              <h3 className="text-xl font-semibold text-gray-900">{userInfo.fullName}</h3>
-              <p className="text-gray-600">{userInfo.phone}</p>
+              <h3 className="text-xl font-semibold text-gray-900">{form.fullName}</h3>
+              <p className="text-gray-600">{user.phone}</p>
               <div className="flex items-center space-x-2 mt-1">
-                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
-                  Đã xác thực
-                </span>
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full font-medium">
-                  VIP Gold
+                {user.kycStatus === 'approved' ? (
+                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                    Đã xác thực
+                  </span>
+                ) : (
+                  <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full font-medium">
+                    {user.kycStatus === 'pending' ? 'Chờ xác thực' : 'Chưa xác thực'}
+                  </span>
+                )}
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
+                  Mã giới thiệu: {user.referralCode}
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Personal Information */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Thông tin cá nhân</h3>
@@ -233,7 +225,6 @@ const PersonalInfo: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Full Name */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Họ và tên <span className="text-red-500">*</span>
@@ -244,340 +235,106 @@ const PersonalInfo: React.FC = () => {
                   <input
                     type="text"
                     name="fullName"
-                    value={userInfo.fullName}
+                    value={form.fullName}
                     onChange={handleInputChange}
-                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.fullName ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`${inputClass(!!errors.fullName)} pl-10`}
                   />
                   {errors.fullName && (
                     <p className="text-sm text-red-600 mt-1">{errors.fullName}</p>
                   )}
                 </div>
               ) : (
-                <p className="text-gray-900">{userInfo.fullName}</p>
+                <p className="text-gray-900">{form.fullName}</p>
               )}
             </div>
 
-            {/* Phone */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Số điện thoại <span className="text-red-500">*</span>
-              </label>
-              {isEditing ? (
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={userInfo.phone}
-                    onChange={handleInputChange}
-                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.phone ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {errors.phone && (
-                    <p className="text-sm text-red-600 mt-1">{errors.phone}</p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-gray-900">{getMaskedInfo(userInfo.phone, 4)}</p>
-              )}
+              <label className="block text-sm font-medium text-gray-700">Số điện thoại</label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="tel"
+                  value={user.phone}
+                  disabled
+                  className={`${inputClass()} pl-10 bg-gray-50 text-gray-500`}
+                />
+              </div>
             </div>
 
-            {/* Email */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Email <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-sm font-medium text-gray-700">Email</label>
               {isEditing ? (
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="email"
                     name="email"
-                    value={userInfo.email}
+                    value={form.email}
                     onChange={handleInputChange}
-                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.email ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`${inputClass(!!errors.email)} pl-10`}
                   />
                   {errors.email && (
                     <p className="text-sm text-red-600 mt-1">{errors.email}</p>
                   )}
                 </div>
               ) : (
-                <p className="text-gray-900">{userInfo.email}</p>
-              )}
-            </div>
-
-            {/* Date of Birth */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Ngày sinh <span className="text-red-500">*</span>
-              </label>
-              {isEditing ? (
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="date"
-                    name="dateOfBirth"
-                    value={userInfo.dateOfBirth}
-                    onChange={handleInputChange}
-                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.dateOfBirth ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {errors.dateOfBirth && (
-                    <p className="text-sm text-red-600 mt-1">{errors.dateOfBirth}</p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-gray-900">{new Date(userInfo.dateOfBirth).toLocaleDateString('vi-VN')}</p>
-              )}
-            </div>
-
-            {/* Gender */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Giới tính</label>
-              {isEditing ? (
-                <select
-                  name="gender"
-                  value={userInfo.gender}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300"
-                >
-                  <option value="male">Nam</option>
-                  <option value="female">Nữ</option>
-                  <option value="other">Khác</option>
-                </select>
-              ) : (
-                <p className="text-gray-900">
-                  {userInfo.gender === 'male' ? 'Nam' : userInfo.gender === 'female' ? 'Nữ' : 'Khác'}
-                </p>
-              )}
-            </div>
-
-            {/* Occupation */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Nghề nghiệp</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  name="occupation"
-                  value={userInfo.occupation}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300"
-                />
-              ) : (
-                <p className="text-gray-900">{userInfo.occupation || 'Chưa cập nhật'}</p>
+                <p className="text-gray-900">{form.email || 'Chưa cập nhật'}</p>
               )}
             </div>
           </div>
         </div>
 
-        {/* Address Information */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Địa chỉ liên hệ</h3>
-          
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Thông tin ngân hàng</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Address */}
-            <div className="space-y-2 md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Địa chỉ <span className="text-red-500">*</span>
-              </label>
-              {isEditing ? (
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    name="address"
-                    value={userInfo.address}
-                    onChange={handleInputChange}
-                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.address ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {errors.address && (
-                    <p className="text-sm text-red-600 mt-1">{errors.address}</p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-gray-900">{userInfo.address}</p>
-              )}
-            </div>
-
-            {/* Ward */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Phường/Xã</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  name="ward"
-                  value={userInfo.ward}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300"
-                />
-              ) : (
-                <p className="text-gray-900">{userInfo.ward}</p>
-              )}
-            </div>
-
-            {/* District */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Quận/Huyện</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  name="district"
-                  value={userInfo.district}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300"
-                />
-              ) : (
-                <p className="text-gray-900">{userInfo.district}</p>
-              )}
-            </div>
-
-            {/* City */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Tỉnh/Thành phố</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  name="city"
-                  value={userInfo.city}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300"
-                />
-              ) : (
-                <p className="text-gray-900">{userInfo.city}</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Financial Information */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Thông tin tài chính</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Income */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Thu nhập hàng tháng</label>
-              {isEditing ? (
-                <input
-                  type="number"
-                  name="income"
-                  value={userInfo.income}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300"
-                />
-              ) : (
-                <p className="text-gray-900">{formatCurrency(userInfo.income)}</p>
-              )}
-            </div>
-
-            {/* Bank Name */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Ngân hàng</label>
               {isEditing ? (
                 <input
                   type="text"
                   name="bankName"
-                  value={userInfo.bankName}
+                  value={form.bankName}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300"
+                  className={inputClass()}
+                  placeholder="VD: Vietcombank"
                 />
               ) : (
-                <p className="text-gray-900">{userInfo.bankName}</p>
+                <p className="text-gray-900">{form.bankName || 'Chưa cập nhật'}</p>
               )}
             </div>
-
-            {/* Bank Account */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Chi nhánh</label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  name="bankBranch"
+                  value={form.bankBranch}
+                  onChange={handleInputChange}
+                  className={inputClass()}
+                  placeholder="VD: Chi nhánh Hà Nội"
+                />
+              ) : (
+                <p className="text-gray-900">{form.bankBranch || 'Chưa cập nhật'}</p>
+              )}
+            </div>
             <div className="space-y-2 md:col-span-2">
               <label className="block text-sm font-medium text-gray-700">Số tài khoản ngân hàng</label>
               {isEditing ? (
                 <input
                   type="text"
                   name="bankAccount"
-                  value={userInfo.bankAccount}
+                  value={form.bankAccount}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300"
+                  className={inputClass()}
+                  placeholder="Nhập số tài khoản để nhận tiền rút"
                 />
               ) : (
-                <p className="text-gray-900">{getMaskedInfo(userInfo.bankAccount, 4)}</p>
+                <p className="text-gray-900">{getMaskedInfo(form.bankAccount, 4) || 'Chưa cập nhật'}</p>
               )}
             </div>
           </div>
         </div>
 
-        {/* Identity Information */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Thông tin định danh</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* ID Number */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Số CMND/CCCD <span className="text-red-500">*</span>
-              </label>
-              {isEditing ? (
-                <div className="relative">
-                  <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    name="idNumber"
-                    value={userInfo.idNumber}
-                    onChange={handleInputChange}
-                    className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.idNumber ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {errors.idNumber && (
-                    <p className="text-sm text-red-600 mt-1">{errors.idNumber}</p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-gray-900">{getMaskedInfo(userInfo.idNumber, 3)}</p>
-              )}
-            </div>
-
-            {/* ID Issue Date */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Ngày cấp</label>
-              {isEditing ? (
-                <input
-                  type="date"
-                  name="idIssueDate"
-                  value={userInfo.idIssueDate}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300"
-                />
-              ) : (
-                <p className="text-gray-900">{new Date(userInfo.idIssueDate).toLocaleDateString('vi-VN')}</p>
-              )}
-            </div>
-
-            {/* ID Issue Place */}
-            <div className="space-y-2 md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700">Nơi cấp</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  name="idIssuePlace"
-                  value={userInfo.idIssuePlace}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300"
-                />
-              ) : (
-                <p className="text-gray-900">{userInfo.idIssuePlace}</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
         {isEditing && (
           <div className="flex space-x-3">
             <button
@@ -602,7 +359,95 @@ const PersonalInfo: React.FC = () => {
           </div>
         )}
 
-        {/* Verification Status */}
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+              <Lock className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Đổi mật khẩu</h3>
+              <p className="text-sm text-gray-500">Cập nhật mật khẩu đăng nhập của bạn</p>
+            </div>
+          </div>
+
+          <form onSubmit={handlePasswordSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Mật khẩu hiện tại</label>
+              <div className="relative">
+                <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="password"
+                  name="currentPassword"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))}
+                  className={`${inputClass()} pl-10`}
+                  placeholder="Nhập mật khẩu hiện tại"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Mật khẩu mới</label>
+              <div className="relative">
+                <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="password"
+                  name="newPassword"
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))}
+                  className={`${inputClass()} pl-10`}
+                  placeholder="Ít nhất 6 ký tự"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Xác nhận mật khẩu mới</label>
+              <div className="relative">
+                <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                  className={`${inputClass()} pl-10`}
+                  placeholder="Nhập lại mật khẩu mới"
+                  required
+                />
+              </div>
+            </div>
+
+            {passwordError && (
+              <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{passwordError}</p>
+            )}
+            {passwordSuccess && (
+              <p className="text-sm text-green-700 bg-green-50 p-3 rounded-lg flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" /> {passwordSuccess}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isChangingPassword}
+              className="w-full py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isChangingPassword ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Đang xử lý...</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-5 h-5" />
+                  <span>Đổi mật khẩu</span>
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
         <div className="mt-6 bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
           <div className="flex items-start space-x-3">
             <div className="w-8 h-8 bg-green-200 rounded-full flex items-center justify-center flex-shrink-0">
@@ -610,20 +455,13 @@ const PersonalInfo: React.FC = () => {
             </div>
             <div className="flex-1">
               <h4 className="font-semibold text-green-900 mb-1">Trạng thái xác thực</h4>
-              <div className="space-y-1 text-sm text-green-700">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span>Số điện thoại đã xác thực</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span>Email đã xác thực</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span>CMND/CCCD đã xác thực</span>
-                </div>
-              </div>
+              {user.kycStatus === 'approved' ? (
+                <p className="text-sm text-green-700">Tài khoản của bạn đã được xác thực đầy đủ.</p>
+              ) : user.kycStatus === 'pending' ? (
+                <p className="text-sm text-green-700">Yêu cầu xác thực của bạn đang được xem xét.</p>
+              ) : (
+                <p className="text-sm text-green-700">Tài khoản của bạn chưa hoàn tất xác thực.</p>
+              )}
             </div>
           </div>
         </div>

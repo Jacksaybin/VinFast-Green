@@ -149,4 +149,16 @@ export const newsService = {
     const count = await execute('DELETE FROM news WHERE id = $1', [newsId]);
     return count > 0;
   },
+
+  /**
+   * Returns the allowed categories (canonical list). Frontend uses:
+   * 'all' | 'vgreen' | 'market' | 'policy'
+   */
+  async getCategories() {
+    const rows = await query(
+      `SELECT category, COUNT(*)::int as count FROM news
+       WHERE is_published = true GROUP BY category`
+    );
+    return rows.map((r: any) => ({ id: r.category, count: r.count }));
+  },
 };

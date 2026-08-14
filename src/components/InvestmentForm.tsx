@@ -20,7 +20,7 @@ interface InvestmentFormProps {
 
 const InvestmentForm: React.FC<InvestmentFormProps> = ({ pkg, isOpen, onClose, onSuccess }) => {
   const user = useAuthStore((s) => s.user);
-  const { balance, deductBalance } = useWalletStore();
+  const { balance } = useWalletStore();
   const { createInvestment } = useInvestmentStore();
   const { addNotification } = useNotificationStore();
 
@@ -105,24 +105,20 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ pkg, isOpen, onClose, o
     setIsProcessing(true);
     setError('');
 
-    await new Promise((r) => setTimeout(r, 1200));
+    // Backend handles wallet deduction atomically inside createInvestment.
+    // Do not call deductBalance locally to avoid double-spend.
+    const result = await createInvestment(user.id, pkg, investmentAmount);
 
-    if (paymentMethod === 'wallet') {
-      const deductResult = deductBalance(
-        user.id,
-        investmentAmount,
-        'investment',
-        `Đầu tư gói ${pkg.name}`
-      );
-
-      if (!deductResult.success) {
-        setError(deductResult.error || 'Không thể thực hiện giao dịch');
-        setIsProcessing(false);
-        return;
-      }
+    if (!result.success) {
+      setError(result.error || 'Không thể thực hiện đầu tư');
+      setIsProcessing(false);
+      return;
     }
 
-    createInvestment(user.id, pkg, investmentAmount);
+    // Refresh wallet balance to reflect backend deduction
+    if (paymentMethod === 'wallet') {
+      useWalletStore.getState().refresh?.();
+    }
 
     addNotification({
       userId: user.id,

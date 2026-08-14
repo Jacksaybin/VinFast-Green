@@ -1,6 +1,7 @@
 import { HashRouter, Route, Routes } from 'react-router'
 import Home from './pages/Home'
 import News from './pages/News'
+import NewsDetail from './pages/NewsDetail'
 import Investment from './pages/Investment'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -16,6 +17,8 @@ import TransactionHistory from './pages/TransactionHistory'
 import Notifications from './pages/Notifications'
 import RequireAuth from './components/RequireAuth'
 import RequireAdmin from './components/RequireAdmin'
+import Referral from './pages/Referral'
+import Reinvestment from './pages/Reinvestment'
 
 export default function App() {
   return (
@@ -23,6 +26,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/news" element={<News />} />
+        <Route path="/news/:slug" element={<NewsDetail />} />
         <Route path="/investment" element={<Investment />} />
         <Route path="/interest-calculator" element={<InterestCalculator />} />
         <Route path="/introduction" element={<Introduction />} />
@@ -76,6 +80,30 @@ export default function App() {
             <RequireAdmin>
               <Admin />
             </RequireAdmin>
+          }
+        />
+        <Route
+          path="/referral"
+          element={
+            <RequireAuth>
+              <Referral />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/reinvest"
+          element={
+            <RequireAuth>
+              <Reinvestment />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/reinvest/:investmentId"
+          element={
+            <RequireAuth>
+              <Reinvestment />
+            </RequireAuth>
           }
         />
       </Routes>

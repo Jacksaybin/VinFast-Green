@@ -2,21 +2,27 @@
  * Trang chủ - Landing page với thông tin tổng quan và các gói đầu tư nổi bật
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowRight, TrendingUp, Shield, Zap, Users, Star } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import Header from '../components/Header';
 import BottomNavigation from '../components/BottomNavigation';
-import InvestmentCard, { InvestmentPackage } from '../components/InvestmentCard';
-import { investmentPackages } from '../data/investmentPackages';
+import InvestmentCard from '../components/InvestmentCard';
 import { useAuthStore } from '../stores/authStore';
+import { usePackageStore } from '../stores/packageStore';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
+  const packages = usePackageStore((s) => s.packages);
+  const loadPackages = usePackageStore((s) => s.load);
 
-  const featuredPackages = investmentPackages
-    .filter(pkg => pkg.showOnHome)
+  useEffect(() => {
+    loadPackages();
+  }, [loadPackages]);
+
+  const featuredPackages = packages
+    .filter(pkg => pkg.status === 'active')
     .slice(0, 3);
 
   const stats = [

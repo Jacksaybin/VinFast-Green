@@ -14,6 +14,11 @@ router.get('/', async (req, res) => {
   return paginated(res, result.news, result.total, parseInt(page as string), parseInt(limit as string));
 });
 
+router.get('/categories/list', async (req, res) => {
+  const cats = await newsService.getCategories();
+  return ok(res, cats);
+});
+
 router.get('/:slug', async (req, res) => {
   const news = await newsService.getNewsBySlug(req.params.slug);
   if (!news) return res.status(404).json({ success: false, error: 'Không tìm thấy bài viết' });

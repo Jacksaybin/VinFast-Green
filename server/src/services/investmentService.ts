@@ -5,6 +5,7 @@
 import { query, queryOne, execute, pool } from '../db';
 import { auditLog } from '../middleware/audit';
 import { AuthRequest } from '../middleware/auth';
+import { awardInvestmentBonus } from '../routes/referrals';
 
 function ref(prefix: string): string {
   return `${prefix}${Date.now().toString(36).toUpperCase()}`;
@@ -104,6 +105,22 @@ export const investmentService = {
         ]
       );
 
+      // Referral commission: credit level 1/2/3 referrers based on settings
+      await this.creditReferralCommissions(client, userId, amount, reference);
+
+      // Award referral signup bonus to referrer (if first investment)
+      const user = await queryOne<any>('SELECT referred_by FROM users WHERE id = $1', [userId]);
+      if (user?.referred_by) {
+        // Get the investment ID
+        const newInv = await queryOne<{ id: string }>(
+          'SELECT id FROM investments WHERE reference = $1',
+          [reference]
+        );
+        if (newInv) {
+          await awardInvestmentBonus(user.referred_by, userId, amount, newInv.id);
+        }
+      }
+
       await client.query('COMMIT');
 
       await auditLog({
@@ -125,7 +142,7 @@ export const investmentService = {
   },
 
   async getUserInvestments(userId: string, status?: string) {
-    let sql = `SELECT i.*, p.name as package_name, p.slug as package_slug, p.image_url
+    let sql = `SELECT i.*, p.name as package_name, p.slug as package_slug, p.image_url, p.investment_period
                FROM investments i
                JOIN packages p ON i.package_id = p.id
                WHERE i.user_id = $1`;
@@ -147,16 +164,61 @@ export const investmentService = {
       packageCode: inv.package_slug,
       amount: parseFloat(inv.amount),
       dailyProfit: parseFloat(inv.daily_profit),
-      investmentPeriod: pkg => {
-        const pkg2 = queryOne<any>('SELECT investment_period FROM packages WHERE id = $1', [inv.package_id]);
-        return pkg2 ? pkg2.investment_period : 30;
-      },
+      investmentPeriod: parseInt(inv.investment_period) || 30,
       accumulatedProfit: parseFloat(inv.accumulated_profit),
       startDate: inv.start_date,
       endDate: inv.end_date,
       status: inv.status,
       reference: inv.reference,
     }));
+  },
+
+  async getAllInvestments(status?: string, page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
+    const params: any[] = [];
+    let where = '';
+
+    if (status) {
+      params.push(status);
+      where = `WHERE i.status = $${params.length}`;
+    }
+
+    const total = (await queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM investments i ${where}`, params
+    ))?.count || '0';
+
+    params.push(limit, offset);
+    const investments = await query(
+      `SELECT i.*, p.name as package_name, p.slug as package_slug, u.full_name, u.phone
+       FROM investments i
+       JOIN packages p ON i.package_id = p.id
+       JOIN users u ON i.user_id = u.id
+       ${where}
+       ORDER BY i.created_at DESC
+       LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    );
+
+    return {
+      investments: investments.map((inv: any) => ({
+        id: inv.id,
+        userId: inv.user_id,
+        userName: inv.full_name,
+        userPhone: inv.phone,
+        packageId: inv.package_id,
+        packageName: inv.package_name,
+        packageCode: inv.package_slug,
+        amount: parseFloat(inv.amount),
+        dailyProfit: parseFloat(inv.daily_profit),
+        investmentPeriod: parseInt(inv.investment_period) || 30,
+        accumulatedProfit: parseFloat(inv.accumulated_profit),
+        startDate: inv.start_date,
+        endDate: inv.end_date,
+        status: inv.status,
+        reference: inv.reference,
+      })),
+      total: parseInt(total),
+    };
   },
 
   async getActiveInvestments(userId: string) {
@@ -208,7 +270,7 @@ export const investmentService = {
       slug: pkg.slug,
       dailyProfit: parseFloat(pkg.daily_profit),
       investmentPeriod: pkg.investment_period,
-      minInvestment: parseFloat(pkg.investment_amount),
+      minInvestment: pkg.min_investment ? parseFloat(pkg.min_investment) : parseFloat(pkg.investment_amount),
       investorCount: pkg.investor_count,
       totalInvested: pkg.total_invested,
       status: pkg.status,
@@ -249,5 +311,173 @@ export const investmentService = {
       values
     );
     return count > 0;
+  },
+
+  /**
+   * Credit referral commission to level 1/2/3 referrers when a user invests or makes their first deposit.
+   * Rates come from the `referral_commission` settings row: { level1, level2, level3 } (percent).
+   * Uses the passed-in client so it participates in the caller's transaction.
+   */
+  async creditReferralCommissions(client: any, userId: string, amount: number, sourceReference: string, context: 'investment' | 'deposit' = 'investment') {
+    const setting = await queryOne<any>('SELECT value FROM settings WHERE id = $1', ['referral_commission']);
+    let rates: any = { level1: 5, level2: 2, level3: 1 };
+    try { rates = setting?.value ? JSON.parse(setting.value) : rates; } catch { /* keep defaults */ }
+
+    // Walk the referral chain: level1 = my referrer, level2 = referrer's referrer, etc.
+    let currentId = userId;
+    const levels = [1, 2, 3].map((l) => ({
+      level: l,
+      rate: parseFloat(rates[`level${l}`]) || 0,
+    }));
+    const successCopy =
+      context === 'deposit'
+        ? 'hoa hồng cấp %s khi bạn bè nạp tiền lần đầu tiên.'
+        : 'hoa hồng cấp %s từ nhà đầu tư được giới thiệu.';
+
+    for (const { level, rate } of levels) {
+      if (rate <= 0) continue;
+
+      const referrer = await queryOne<any>(
+        'SELECT u.id, u.referred_by, u.full_name FROM users u WHERE u.id = $1',
+        [currentId]
+      );
+      if (!referrer || !referrer.referred_by) break;
+      currentId = referrer.referred_by;
+
+      const commission = Math.round(amount * (rate / 100) * 100) / 100;
+      if (commission <= 0) continue;
+
+      await client.query(
+        `UPDATE wallets SET balance = balance + $1, updated_at = NOW()
+         WHERE user_id = $2`,
+        [commission, currentId]
+      );
+
+      await client.query(
+        `INSERT INTO transactions (user_id, type, amount, status, reference, description, metadata)
+         VALUES ($1, 'referral', $2, 'completed', $3, $4, $5)`,
+        [
+          currentId,
+          commission,
+          `RF${sourceReference.slice(0, 16)}L${level}${Date.now().toString(36).toUpperCase()}`,
+          context === 'deposit' ? `Hoa hồng giới thiệu nạp lần đầu - cấp ${level}` : `Hoa hồng giới thiệu cấp ${level}`,
+          JSON.stringify({ fromUser: userId, sourceRef: sourceReference, level, context }),
+        ]
+      );
+
+      await client.query(
+        `INSERT INTO notifications (user_id, title, message, type, link)
+         VALUES ($1, $2, $3, 'success', $4)`,
+        [
+          currentId,
+          'Hoa hồng giới thiệu',
+          `Bạn nhận được ${commission.toLocaleString('vi-VN')} ₫ ${successCopy.replace('%s', String(level))}`,
+          context === 'deposit' ? '/benefits' : '/benefits',
+        ]
+      );
+    }
+  },
+
+  /**
+   * Credit daily profit to all active investments.
+   * Idempotent: uses last_profit_date so each investment is credited once per day.
+   * Also completes investments past their end_date and releases principal.
+   */
+  async addDailyProfits() {
+    const today = new Date().toISOString().slice(0, 10);
+
+    // 1. Credit profit for each active investment not yet credited today
+    const active = await query<any>(
+      `SELECT * FROM investments
+       WHERE status = 'active' AND (last_profit_date IS NULL OR last_profit_date < $1)`,
+      [today]
+    );
+
+    let credited = 0;
+    for (const inv of active) {
+      const amount = parseFloat(inv.amount);
+      const rate = parseFloat(inv.daily_profit);
+      const profit = Math.round(amount * (rate / 100) * 100) / 100;
+
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+
+        await client.query(
+          `UPDATE investments SET accumulated_profit = accumulated_profit + $1, last_profit_date = $2, updated_at = NOW()
+           WHERE id = $3`,
+          [profit, today, inv.id]
+        );
+
+        await client.query(
+          `INSERT INTO transactions (user_id, type, amount, status, reference, description, metadata)
+           VALUES ($1, 'profit', $2, 'completed', $3, $4, $5)`,
+          [
+            inv.user_id,
+            profit,
+            `PF${inv.reference.slice(0, 12)}${Date.now().toString(36).toUpperCase()}`,
+            `Lãi đầu tư ${inv.amount.toLocaleString('vi-VN')} ₫`,
+            JSON.stringify({ investmentId: inv.id, reference: inv.reference }),
+          ]
+        );
+
+        await client.query('COMMIT');
+        credited++;
+      } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Daily profit error:', err);
+      } finally {
+        client.release();
+      }
+    }
+
+    // 2. Complete investments past end_date and release principal + accrued profit back to balance
+    const due = await query<any>(
+      `SELECT * FROM investments WHERE status = 'active' AND end_date <= NOW()`
+    );
+
+    let completed = 0;
+    for (const inv of due) {
+      const amount = parseFloat(inv.amount);
+      const profit = parseFloat(inv.accumulated_profit || '0');
+      const total = Math.round((amount + profit) * 100) / 100;
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+
+        await client.query(
+          `UPDATE investments SET status = 'completed', updated_at = NOW()
+           WHERE id = $1 AND status = 'active'`,
+          [inv.id]
+        );
+
+        await client.query(
+          `UPDATE wallets SET locked_balance = locked_balance - $1, balance = balance + $2, updated_at = NOW()
+           WHERE user_id = $3`,
+          [amount, total, inv.user_id]
+        );
+
+        await client.query(
+          `INSERT INTO notifications (user_id, title, message, type, link)
+           VALUES ($1, $2, $3, 'transaction', $4)`,
+          [
+            inv.user_id,
+            'Đầu tư hoàn tất',
+            `Gói đầu tư ${amount.toLocaleString('vi-VN')} ₫ đã đáo hạn. Số tiền gốc ${amount.toLocaleString('vi-VN')} ₫ + lãi ${profit.toLocaleString('vi-VN')} ₫ đã về tài khoản.`,
+            '/my-account',
+          ]
+        );
+
+        await client.query('COMMIT');
+        completed++;
+      } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Complete investment error:', err);
+      } finally {
+        client.release();
+      }
+    }
+
+    return { credited, completed, checked: active.length + due.length };
   },
 };

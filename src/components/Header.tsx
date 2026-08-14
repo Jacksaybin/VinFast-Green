@@ -3,8 +3,8 @@
  * Header component - Top navigation bar with logo, search, user actions and real notifications
  */
 
-import React, { useState } from 'react';
-import { Search, Bell, User, ChevronDown, Menu, X, LogOut } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Search, Bell, User, ChevronDown, Menu, X, LogOut, Users, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '../stores/authStore';
 import { useNotificationStore } from '../stores/notificationStore';
@@ -17,7 +17,15 @@ const Header: React.FC = () => {
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
 
   const { user, isAuthenticated, logout } = useAuthStore();
-  const { getUserNotifications, getUnreadCount, markAsRead } = useNotificationStore();
+  const { getUserNotifications, getUnreadCount, markAsRead, refresh } = useNotificationStore();
+
+  // Poll notifications when authenticated (catches admin reply, deposit approval, etc.)
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    refresh();
+    const id = setInterval(() => refresh(), 30_000);
+    return () => clearInterval(id);
+  }, [isAuthenticated, user, refresh]);
 
   const notifications = user ? getUserNotifications(user.id) : [];
   const unreadCount = user ? getUnreadCount(user.id) : 0;
@@ -195,6 +203,26 @@ const Header: React.FC = () => {
                         <button
                           onClick={() => {
                             setShowUserDropdown(false);
+                            navigate('/referral');
+                          }}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors flex items-center space-x-2"
+                        >
+                          <Users className="w-4 h-4" />
+                          <span>Giới thiệu bạn bè</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowUserDropdown(false);
+                            navigate('/reinvest');
+                          }}
+                          className="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors flex items-center space-x-2"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                          <span>Tái đầu tư</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowUserDropdown(false);
                             navigate('/notifications');
                           }}
                           className="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors flex items-center space-x-2"
@@ -268,6 +296,8 @@ const Header: React.FC = () => {
               <>
                 <button onClick={() => { navigate('/my-account'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">Tài khoản</button>
                 <button onClick={() => { navigate('/wallet'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">Ví</button>
+                <button onClick={() => { navigate('/referral'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">Giới thiệu bạn bè</button>
+                <button onClick={() => { navigate('/reinvest'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">Tái đầu tư</button>
               </>
             ) : (
               <>

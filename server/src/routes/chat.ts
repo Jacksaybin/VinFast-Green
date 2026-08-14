@@ -52,7 +52,9 @@ router.post(
       req.user?.userId,
       req.user?.phone
     );
-    if (!result.success) return badRequest(res, result.error!);
+    if (!result.success || !('message' in result)) {
+      return badRequest(res, (result as any).error || 'Gửi tin nhắn thất bại');
+    }
 
     return ok(res, result.message, 'Gửi tin nhắn thành công');
   }

@@ -31,6 +31,8 @@ CREATE TABLE IF NOT EXISTS users (
   bank_account VARCHAR(50),
   bank_name VARCHAR(255),
   bank_branch VARCHAR(255),
+  failed_login_count INTEGER NOT NULL DEFAULT 0,
+  locked_until TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -84,6 +86,7 @@ CREATE TABLE IF NOT EXISTS investments (
   amount DECIMAL(18, 2) NOT NULL,
   daily_profit DECIMAL(6, 3) NOT NULL,
   accumulated_profit DECIMAL(18, 2) NOT NULL DEFAULT 0,
+  last_profit_date DATE DEFAULT CURRENT_DATE,
   start_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   end_date TIMESTAMPTZ NOT NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'completed', 'paused', 'cancelled')),
@@ -320,3 +323,53 @@ CREATE TRIGGER settings_updated_at BEFORE UPDATE ON settings FOR EACH ROW EXECUT
 -- ALTER TABLE investments ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+-- =============================================
+-- REFERRAL SYSTEM TABLES (Phase 2)
+-- =============================================
+
+-- Referral bonuses table
+CREATE TABLE IF NOT EXISTS referral_bonuses (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  referrer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  referred_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  investment_id UUID REFERENCES investments(id) ON DELETE SET NULL,
+  bonus_amount DECIMAL(18, 2) NOT NULL,
+  bonus_type VARCHAR(30) NOT NULL CHECK (bonus_type IN ('signup', 'first_investment', 'milestone')),
+  status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'credited', 'cancelled', 'expired')),
+  description TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  credited_at TIMESTAMPTZ
+);
+
+-- Reinvestments table
+CREATE TABLE IF NOT EXISTS reinvestments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  original_investment_id UUID REFERENCES investments(id) ON DELETE SET NULL,
+  new_investment_id UUID REFERENCES investments(id) ON DELETE SET NULL,
+  amount DECIMAL(18, 2) NOT NULL,
+  profit_used DECIMAL(18, 2) DEFAULT 0,
+  cash_added DECIMAL(18, 2) DEFAULT 0,
+  package_id UUID REFERENCES packages(id) ON DELETE SET NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'completed' CHECK (status IN ('pending', 'completed', 'failed')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Add new columns to investments table for reinvestment tracking
+ALTER TABLE investments ADD COLUMN IF NOT EXISTS reinvested_from UUID REFERENCES investments(id) ON DELETE SET NULL;
+ALTER TABLE investments ADD COLUMN IF NOT EXISTS total_cycles INTEGER DEFAULT 1;
+
+-- Add columns to users for referral tracking
+ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_signup_bonus_claimed BOOLEAN DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_count INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_total_earnings DECIMAL(18, 2) DEFAULT 0;
+
+-- Referral indexes
+CREATE INDEX IF NOT EXISTS idx_referral_bonuses_referrer ON referral_bonuses(referrer_id);
+CREATE INDEX IF NOT EXISTS idx_referral_bonuses_referred ON referral_bonuses(referred_id);
+CREATE INDEX IF NOT EXISTS idx_referral_bonuses_status ON referral_bonuses(status);
+CREATE INDEX IF NOT EXISTS idx_reinvestments_user ON reinvestments(user_id);
+CREATE INDEX IF NOT EXISTS idx_reinvestments_original ON reinvestments(original_investment_id);
+CREATE INDEX IF NOT EXISTS idx_investments_reinvested_from ON investments(reinvested_from);
+

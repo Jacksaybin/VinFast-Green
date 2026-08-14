@@ -17,13 +17,13 @@ const validate = (req: any, res: Response, next: Function) => {
 };
 
 // Public routes
-router.get('/packages', async (req: Response) => {
+router.get('/packages', async (req: any, res: Response) => {
   const { category } = req.query;
   const packages = await investmentService.getPackages(category as string);
   return ok(res, packages);
 });
 
-router.get('/stats', async (req: Response) => {
+router.get('/stats', async (req: any, res: Response) => {
   const stats = await investmentService.getPackageStats();
   return ok(res, stats);
 });
@@ -57,13 +57,16 @@ router.post(
 );
 
 // Admin routes
-router.get('/admin/all', requireAdmin, async (req: AuthRequest, res: Response) => {
-  const investments = await investmentService.getPackageStats();
-  return ok(res, investments);
+router.get('/admin/all', requireAuth, requireAdmin, async (req: AuthRequest, res: Response) => {
+  const status = req.query.status ? String(req.query.status) : undefined;
+  const page = parseInt(String(req.query.page || '1'), 10);
+  const limit = parseInt(String(req.query.limit || '20'), 10);
+  const result = await investmentService.getAllInvestments(status, page, limit);
+  return ok(res, result);
 });
 
 router.put('/admin/package/:id', requireAdmin, async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
+  const id = String(req.params.id);
   const result = await investmentService.updatePackage(id, req.body);
   if (!result) return badRequest(res, 'Cập nhật thất bại');
   return ok(res, null, 'Cập nhật thành công');
