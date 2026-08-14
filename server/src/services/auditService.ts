@@ -5,9 +5,17 @@
 import { query, queryOne } from '../db';
 
 export const auditService = {
-  async getLogs(page = 1, limit = 50, action?: string, userId?: string, from?: string, to?: string) {
+  async getLogs(
+    page = 1,
+    limit = 50,
+    action?: string,
+    userId?: string,
+    from?: string,
+    to?: string,
+    userSearch?: string
+  ) {
     const offset = (page - 1) * limit;
-    const { where, params } = buildWhere({ action, userId, from, to });
+    const { where, params } = buildWhere({ action, userId, userSearch, from, to });
 
     const total = (await queryOne<{ count: string }>(
       `SELECT COUNT(*) as count FROM audit_logs ${where}`,
@@ -28,8 +36,14 @@ export const auditService = {
     return { logs, total: parseInt(total) };
   },
 
-  async getLogsForExport(action?: string, userId?: string, from?: string, to?: string) {
-    const { where, params } = buildWhere({ action, userId, from, to });
+  async getLogsForExport(
+    action?: string,
+    userId?: string,
+    from?: string,
+    to?: string,
+    userSearch?: string
+  ) {
+    const { where, params } = buildWhere({ action, userId, userSearch, from, to });
     return query(
       `SELECT a.*, u.phone as user_phone, u.full_name as user_full_name
        FROM audit_logs a
@@ -62,7 +76,13 @@ export const auditService = {
   },
 };
 
-function buildWhere(filters: { action?: string; userId?: string; from?: string; to?: string }) {
+function buildWhere(filters: {
+  action?: string;
+  userId?: string;
+  userSearch?: string;
+  from?: string;
+  to?: string;
+}) {
   const params: any[] = [];
   const conditions: string[] = [];
 
@@ -73,6 +93,13 @@ function buildWhere(filters: { action?: string; userId?: string; from?: string; 
   if (filters.userId) {
     params.push(filters.userId);
     conditions.push(`a.user_id = $${params.length}`);
+  }
+  if (filters.userSearch) {
+    const like = `%${filters.userSearch.replace(/[%_]/g, '\\$&')}%`;
+    params.push(like);
+    conditions.push(
+      `(a.user_id::text = $${params.length} OR a.user_id IN (SELECT id FROM users WHERE phone LIKE $${params.length} ESCAPE '\\' OR full_name ILIKE $${params.length}))`
+    );
   }
   if (filters.from) {
     params.push(filters.from);

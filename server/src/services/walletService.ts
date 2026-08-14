@@ -9,8 +9,12 @@ import { notificationService } from './notificationService';
 import { settingsService } from './settingsService';
 import { investmentService } from './investmentService';
 
+import { randomUUID } from 'crypto';
+
 function ref(prefix: string): string {
-  return `${prefix}${Date.now().toString(36).toUpperCase()}`;
+  // Dùng UUID để tránh collision khi 2 request xảy ra cùng millisecond
+  // Format: PREFIX-XXXXXXXX (8 char UUID hex uppercase)
+  return `${prefix}${randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase()}`;
 }
 
 async function getMinAmount(settingId: string, fallback: number): Promise<number> {
@@ -444,38 +448,56 @@ export const walletService = {
   ) {
     const absAmount = Math.abs(amount);
 
-    const wallet = await queryOne<{ balance: string }>(
-      `SELECT balance FROM wallets WHERE user_id = $1 FOR UPDATE`,
-      [userId]
-    );
-    if (!wallet) return { success: false, error: 'Không tìm thấy ví người dùng' };
-
-    const oldBalance = parseFloat(wallet.balance);
-
-    if (action === 'subtract' && oldBalance < absAmount) {
-      return { success: false, error: `Số dư không đủ (hiện có ${oldBalance.toLocaleString('vi-VN')} ₫)` };
-    }
-
-    // Soft daily cap to mitigate fat-finger errors (100M/day per admin)
-    const dailySum = await queryOne<{ sum: string }>(
-      `SELECT COALESCE(SUM(amount), 0) as sum
-       FROM transactions
-       WHERE processed_by = $1
-         AND type IN ('admin_credit', 'admin_debit')
-         AND processed_at >= CURRENT_DATE`,
-      [adminId]
-    );
-    const dailyTotal = parseFloat(dailySum?.sum || '0');
-    if (dailyTotal + absAmount > 100_000_000) {
-      return {
-        success: false,
-        error: `Bạn đã điều chỉnh ${dailyTotal.toLocaleString('vi-VN')} ₫ trong hôm nay. Giới hạn 100.000.000 ₫/ngày.`,
-      };
-    }
+    const MAX_BALANCE = 1_000_000_000_000; // 1 nghìn tỷ - hard ceiling chống overflow / fat-finger
+    const MAX_DAILY_PER_ADMIN = 100_000_000;
 
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
+
+      // Khóa row ví trong transaction — phòng race condition khi 2 admin cùng thao tác
+      const wallet = await client.query<{ balance: string }>(
+        `SELECT balance FROM wallets WHERE user_id = $1 FOR UPDATE`,
+        [userId]
+      );
+      if (wallet.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return { success: false, error: 'Không tìm thấy ví người dùng' };
+      }
+
+      const oldBalance = parseFloat(wallet.rows[0].balance);
+
+      if (action === 'subtract' && oldBalance < absAmount) {
+        await client.query('ROLLBACK');
+        return { success: false, error: `Số dư không đủ (hiện có ${oldBalance.toLocaleString('vi-VN')} ₫)` };
+      }
+
+      const projectedBalance = action === 'add' ? oldBalance + absAmount : Math.max(0, oldBalance - absAmount);
+      if (action === 'add' && projectedBalance > MAX_BALANCE) {
+        await client.query('ROLLBACK');
+        return {
+          success: false,
+          error: `Số dư vượt giới hạn cho phép (${MAX_BALANCE.toLocaleString('vi-VN')} ₫). Hiện có ${oldBalance.toLocaleString('vi-VN')} ₫.`,
+        };
+      }
+
+      // Soft daily cap to mitigate fat-finger errors (100M/day per admin)
+      const dailySum = await client.query<{ sum: string }>(
+        `SELECT COALESCE(SUM(amount), 0) as sum
+         FROM transactions
+         WHERE processed_by = $1
+           AND type IN ('admin_credit', 'admin_debit')
+           AND processed_at >= CURRENT_DATE`,
+        [adminId]
+      );
+      const dailyTotal = parseFloat(dailySum.rows[0]?.sum || '0');
+      if (dailyTotal + absAmount > MAX_DAILY_PER_ADMIN) {
+        await client.query('ROLLBACK');
+        return {
+          success: false,
+          error: `Bạn đã điều chỉnh ${dailyTotal.toLocaleString('vi-VN')} ₫ trong hôm nay. Giới hạn ${MAX_DAILY_PER_ADMIN.toLocaleString('vi-VN')} ₫/ngày.`,
+        };
+      }
 
       const type = action === 'add' ? 'admin_credit' : 'admin_debit';
       const reference = ref('ADJ');
@@ -488,7 +510,12 @@ export const walletService = {
         [absAmount, userId]
       );
 
-      const newBalance = action === 'add' ? oldBalance + absAmount : Math.max(0, oldBalance - absAmount);
+      // Đọc lại balance thực tế sau UPDATE để chắc chắn (tránh lệch do GREATEST)
+      const finalRow = await client.query<{ balance: string }>(
+        `SELECT balance FROM wallets WHERE user_id = $1`,
+        [userId]
+      );
+      const newBalance = parseFloat(finalRow.rows[0].balance);
 
       await client.query(
         `INSERT INTO transactions (user_id, type, amount, status, reference, description, processed_by, processed_at, metadata)
@@ -501,8 +528,6 @@ export const walletService = {
           note,
           adminId,
           JSON.stringify({
-            note,
-            adminId,
             oldBalance,
             newBalance,
             action,
