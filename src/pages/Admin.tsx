@@ -8,7 +8,7 @@ import {
   MoreVertical, Eye, Trash2, Plus, RefreshCw, Settings,
   Bell, FileText, ToggleLeft, ToggleRight, Clock, Menu, X,
   ChevronRight, Activity, AlertCircle, Check, AlertTriangle, Paintbrush,
-  CreditCard, Wallet, TrendingDown, RefreshCcw
+  CreditCard, Wallet, TrendingDown, RefreshCcw, MessageSquare, Send, User
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import Header from '../components/Header';
@@ -16,7 +16,7 @@ import BottomNavigation from '../components/BottomNavigation';
 import { useAuthStore } from '../stores/authStore';
 import { useWalletStore } from '../stores/walletStore';
 import { formatCurrency } from '../lib/format';
-import { adminApi } from '../lib/api';
+import { adminApi, chatApi, ApiChatConversation, ApiChatMessage } from '../lib/api';
 
 const Admin: React.FC = () => {
   const navigate = useNavigate();
@@ -34,6 +34,13 @@ const Admin: React.FC = () => {
   });
   const [pendingDeposits, setPendingDeposits] = useState<any[]>([]);
   const [pendingWithdrawals, setPendingWithdrawals] = useState<any[]>([]);
+
+  // Chat support state
+  const [chatConversations, setChatConversations] = useState<ApiChatConversation[]>([]);
+  const [chatUnread, setChatUnread] = useState(0);
+  const [activeChat, setActiveChat] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<ApiChatMessage[]>([]);
+  const [replyText, setReplyText] = useState('');
 
   // Check admin role
   useEffect(() => {
@@ -113,11 +120,75 @@ const Admin: React.FC = () => {
     { id: 'dashboard', label: 'Tổng quan', icon: TrendingUp },
     { id: 'deposits', label: 'Duyệt nạp tiền', icon: CreditCard },
     { id: 'withdrawals', label: 'Duyệt rút tiền', icon: Wallet },
+    { id: 'chat', label: 'Chat hỗ trợ', icon: MessageSquare },
     { id: 'users', label: 'Người dùng', icon: Users },
     { id: 'packages', label: 'Gói đầu tư', icon: Package },
     { id: 'transactions', label: 'Giao dịch', icon: DollarSign },
     { id: 'settings', label: 'Cài đặt', icon: Settings },
   ];
+
+  // Chat support logic
+  const loadChatConversations = useCallback(async () => {
+    try {
+      const data = await chatApi.adminGetConversations();
+      setChatConversations(data.conversations);
+      setChatUnread(data.totalUnread);
+    } catch {
+      // backend offline
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeModule === 'chat') loadChatConversations();
+  }, [activeModule, loadChatConversations]);
+
+  // Poll for new chat messages every 5s while on chat module
+  useEffect(() => {
+    if (activeModule !== 'chat') return;
+    const interval = setInterval(() => {
+      loadChatConversations();
+      if (activeChat) {
+        chatApi.adminGetMessages(activeChat).then((data) => {
+          if (data) setChatMessages(data.messages);
+        });
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [activeModule, activeChat, loadChatConversations]);
+
+  const handleSelectConversation = async (convId: string) => {
+    setActiveChat(convId);
+    try {
+      const data = await chatApi.adminGetMessages(convId);
+      if (data) setChatMessages(data.messages);
+      await loadChatConversations();
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleAdminReply = async () => {
+    const text = replyText.trim();
+    if (!text || !activeChat) return;
+    try {
+      const sent = await chatApi.adminReply(activeChat, text);
+      if (sent) setChatMessages((prev) => [...prev, sent]);
+      setReplyText('');
+      await loadChatConversations();
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleCloseConversation = async (convId: string) => {
+    try {
+      await chatApi.adminCloseConversation(convId);
+      if (activeChat === convId) setActiveChat(null);
+      await loadChatConversations();
+    } catch {
+      // ignore
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -151,7 +222,7 @@ const Admin: React.FC = () => {
             <button
               key={item.id}
               onClick={() => setActiveModule(item.id)}
-              className={`flex items-center gap-1 px-3 py-2 rounded-full text-xs whitespace-nowrap ${
+              className={`flex items-center gap-1 px-3 py-2 rounded-full text-xs whitespace-nowrap relative ${
                 activeModule === item.id
                   ? 'bg-green-600 text-white'
                   : 'bg-white text-gray-600 border'
@@ -159,6 +230,11 @@ const Admin: React.FC = () => {
             >
               <item.icon className="w-3 h-3" />
               {item.label}
+              {item.id === 'chat' && chatUnread > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                  {chatUnread > 9 ? '9+' : chatUnread}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -373,6 +449,140 @@ const Admin: React.FC = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Chat Support */}
+        {activeModule === 'chat' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-gray-900">Hỗ trợ khách hàng</h3>
+              {chatUnread > 0 && (
+                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
+                  {chatUnread} tin chưa đọc
+                </span>
+              )}
+            </div>
+
+            {/* Conversation list */}
+            {!activeChat && (
+              <div className="bg-white rounded-xl p-4 shadow-sm">
+                {chatConversations.length === 0 ? (
+                  <div className="text-center py-8">
+                    <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">Chưa có cuộc hội thoại nào</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {chatConversations.map((conv) => (
+                      <div
+                        key={conv.id}
+                        onClick={() => handleSelectConversation(conv.id)}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                      >
+                        <div className="flex items-center space-x-3 min-w-0">
+                          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <User className="w-5 h-5 text-green-600" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-gray-900 text-sm truncate">
+                              {conv.user_full_name || conv.user_name || 'Khách'}{' '}
+                              <span className="text-xs text-gray-400">{conv.user_phone || ''}</span>
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">{conv.last_message || 'Cuộc hội thoại mới'}</p>
+                            <p className="text-xs text-gray-400">
+                              {conv.last_message_at ? new Date(conv.last_message_at).toLocaleString('vi-VN') : new Date(conv.created_at).toLocaleString('vi-VN')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2 flex-shrink-0">
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            conv.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {conv.status === 'open' ? 'Mở' : 'Đóng'}
+                          </span>
+                          {conv.unread_count > 0 && (
+                            <span className="bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center">
+                              {conv.unread_count}
+                            </span>
+                          )}
+                          <ChevronRight className="w-4 h-4 text-gray-400" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Chat detail */}
+            {activeChat && (
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                {/* Chat header */}
+                <div className="bg-gradient-to-r from-green-600 to-green-700 p-4 text-white flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <button onClick={() => setActiveChat(null)} className="text-white">
+                      <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <div>
+                      <p className="font-semibold text-sm">
+                        {chatConversations.find(c => c.id === activeChat)?.user_full_name ||
+                         chatConversations.find(c => c.id === activeChat)?.user_name || 'Khách'}
+                      </p>
+                      <p className="text-xs text-green-100">
+                        {chatConversations.find(c => c.id === activeChat)?.user_phone || ''}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleCloseConversation(activeChat)}
+                    className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
+                  >
+                    Đóng hội thoại
+                  </button>
+                </div>
+
+                {/* Messages */}
+                <div className="p-4 bg-gray-50 h-80 overflow-y-auto space-y-3">
+                  {chatMessages.length === 0 && (
+                    <p className="text-center text-gray-400 text-sm py-8">Chưa có tin nhắn</p>
+                  )}
+                  {chatMessages.map((msg) => (
+                    <div key={msg.id} className={`flex ${msg.sender === 'admin' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${
+                        msg.sender === 'admin'
+                          ? 'bg-green-600 text-white rounded-br-md'
+                          : 'bg-white text-gray-800 border rounded-bl-md'
+                      }`}>
+                        <p className="break-words">{msg.text}</p>
+                        <p className={`text-[10px] mt-1 ${msg.sender === 'admin' ? 'text-green-100' : 'text-gray-400'}`}>
+                          {new Date(msg.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Reply input */}
+                <div className="p-4 bg-white border-t flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAdminReply()}
+                    placeholder="Nhập câu trả lời..."
+                    className="flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                  />
+                  <button
+                    onClick={handleAdminReply}
+                    disabled={!replyText.trim()}
+                    className="w-9 h-9 bg-green-600 text-white rounded-full flex items-center justify-center hover:bg-green-700 disabled:opacity-50"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             )}
           </div>

@@ -10,10 +10,12 @@ import { investmentService } from '../services/investmentService';
 import { notificationService } from '../services/notificationService';
 import { newsService } from '../services/newsService';
 import { chatService } from '../services/chatService';
-import { requireAdmin, AuthRequest } from '../middleware/auth';
+import { requireAdmin, requireAuth, AuthRequest } from '../middleware/auth';
 import { ok, badRequest, paginated } from '../utils/response';
 
 const router = Router();
+
+router.use(requireAuth, requireAdmin);
 
 router.get('/stats', requireAdmin, async (req: AuthRequest, res: Response) => {
   const stats = await authService.getStats();

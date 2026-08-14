@@ -319,7 +319,7 @@ export const adminApi = {
   },
 
   async updateUserStatus(userId: string, status: 'active' | 'suspended'): Promise<boolean> {
-    const result = await request('/admin/users/${userId}/status', {
+    const result = await request(`/admin/users/${userId}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status }),
     });
@@ -419,6 +419,90 @@ export const adminApi = {
 
   async deleteNews(id: string): Promise<boolean> {
     const result = await request(`/admin/news/${id}`, { method: 'DELETE' });
+    return result.success;
+  },
+};
+
+// =============================================
+// CHAT API
+// =============================================
+
+export interface ApiChatMessage {
+  id: string;
+  conversation_id: string;
+  sender: 'user' | 'admin';
+  text: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface ApiChatConversation {
+  id: string;
+  client_ref: string;
+  user_id: string | null;
+  user_name: string;
+  user_full_name?: string | null;
+  user_phone?: string | null;
+  status: 'open' | 'closed';
+  last_message: string | null;
+  last_message_at: string | null;
+  unread_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+function getClientRef(): string {
+  let ref = localStorage.getItem('vgreen_chat_ref');
+  if (!ref) {
+    ref = `web-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    localStorage.setItem('vgreen_chat_ref', ref);
+  }
+  return ref;
+}
+
+export const chatApi = {
+  async getConversation(): Promise<{ conversation: ApiChatConversation; messages: ApiChatMessage[] } | null> {
+    const result = await request<{ conversation: ApiChatConversation; messages: ApiChatMessage[] }>(
+      '/chat/conversation',
+      { headers: { 'X-Client-Ref': getClientRef() } as any }
+    );
+    return result.success ? result.data! : null;
+  },
+
+  async sendMessage(text: string): Promise<ApiChatMessage | null> {
+    const result = await request<ApiChatMessage>('/chat/messages', {
+      method: 'POST',
+      headers: { 'X-Client-Ref': getClientRef() } as any,
+      body: JSON.stringify({ text }),
+    });
+    return result.success ? result.data : null;
+  },
+
+  // Admin endpoints
+  async adminGetConversations(): Promise<{ conversations: ApiChatConversation[]; totalUnread: number }> {
+    const result = await request<{ conversations: ApiChatConversation[]; totalUnread: number }>(
+      '/admin/chat/conversations'
+    );
+    return result.success ? result.data! : { conversations: [], totalUnread: 0 };
+  },
+
+  async adminGetMessages(conversationId: string): Promise<{ conversation: ApiChatConversation; messages: ApiChatMessage[] } | null> {
+    const result = await request<{ conversation: ApiChatConversation; messages: ApiChatMessage[] }>(
+      `/admin/chat/conversations/${conversationId}/messages`
+    );
+    return result.success ? result.data! : null;
+  },
+
+  async adminReply(conversationId: string, text: string): Promise<ApiChatMessage | null> {
+    const result = await request<ApiChatMessage>(`/admin/chat/conversations/${conversationId}/reply`, {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    });
+    return result.success ? result.data : null;
+  },
+
+  async adminCloseConversation(conversationId: string): Promise<boolean> {
+    const result = await request(`/admin/chat/conversations/${conversationId}/close`, { method: 'POST' });
     return result.success;
   },
 };

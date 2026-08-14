@@ -44,6 +44,7 @@
     "dotenv": "^17.4.2",
     "embla-carousel-react": "^8.6.0",
     "express": "^5.2.1",
+    "express-validator": "^7.3.2",
     "i18next": "^25.1.2",
     "input-otp": "^1.4.2",
     "jsonwebtoken": "^9.0.3",
