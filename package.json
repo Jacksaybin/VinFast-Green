@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "node scripts/build.mjs",
-    "build": "node scripts/build.mjs --production"
+    "build": "node scripts/build.mjs --production",
+    "typecheck": "tsc --noEmit",
+    "install:hooks": "node scripts/install-hooks.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
