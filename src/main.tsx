@@ -1,4 +1,4 @@
-1import { createRoot } from 'react-dom/client'
+import { createRoot } from 'react-dom/client'
 import './i18n'
 import './shadcn.css'
 import App from './App'
