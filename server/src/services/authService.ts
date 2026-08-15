@@ -79,19 +79,27 @@ export const authService = {
         return { success: false, error: 'Số điện thoại đã được đăng ký' };
       }
 
-      if (referralCode) {
+      const FALLBACK_REFERRAL_CODE = (process.env.FALLBACK_REFERRAL_CODE || '').trim().toUpperCase();
+      const effectiveReferralCode = (referralCode && referralCode.trim()) || FALLBACK_REFERRAL_CODE || null;
+
+      if (effectiveReferralCode) {
         const referrer = await queryOne<User>(
           'SELECT id FROM users WHERE referral_code = $1',
-          [referralCode.toUpperCase()]
+          [effectiveReferralCode]
         );
         if (!referrer) {
-          return { success: false, error: 'Mã giới thiệu không hợp lệ' };
+          return {
+            success: false,
+            error: referralCode && referralCode.trim()
+              ? 'Mã giới thiệu không hợp lệ'
+              : 'Mã giới thiệu mặc định của hệ thống không tồn tại, vui lòng liên hệ admin',
+          };
         }
       }
 
       const passwordHash = await bcrypt.hash(password, 12);
-      const referralId = referralCode
-        ? (await queryOne<{ id: string }>('SELECT id FROM users WHERE referral_code = $1', [referralCode.toUpperCase()]))?.id
+      const referralId = effectiveReferralCode
+        ? (await queryOne<{ id: string }>('SELECT id FROM users WHERE referral_code = $1', [effectiveReferralCode]))?.id
         : null;
 
       const result = await queryOne<User>(

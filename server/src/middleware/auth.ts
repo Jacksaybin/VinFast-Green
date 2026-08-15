@@ -4,7 +4,9 @@
 
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { queryOne } from '../db';
+import { tokenBlacklist, userBlacklist } from './tokenBlacklist';
 
 export interface JwtPayload {
   userId: string;
@@ -12,6 +14,7 @@ export interface JwtPayload {
   role: string;
   iat: number;
   exp: number;
+  jti?: string;
 }
 
 export interface AuthRequest extends Request {
@@ -31,8 +34,10 @@ const JWT_SECRET = (() => {
 })();
 
 export function generateTokens(user: { id: string; phone: string; role: string }) {
+  const jti = crypto.randomUUID();
+
   const accessToken = jwt.sign(
-    { userId: user.id, phone: user.phone, role: user.role },
+    { userId: user.id, phone: user.phone, role: user.role, jti },
     JWT_SECRET,
     { expiresIn: (process.env.JWT_EXPIRES_IN as any) || '7d' }
   );
@@ -76,6 +81,16 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
 
   if (!payload) {
     return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+
+  // Check blacklist (logout trước đó, hoặc admin force-revoke)
+  if (payload.jti && tokenBlacklist.has(payload.jti)) {
+    return res.status(401).json({ error: 'Token đã bị thu hồi. Vui lòng đăng nhập lại.' });
+  }
+
+  // Check user-level block (admin suspend → all sessions dead)
+  if (userBlacklist.isBlocked(payload.userId)) {
+    return res.status(401).json({ error: 'Tài khoản đã bị tạm khoá. Vui lòng liên hệ hỗ trợ.' });
   }
 
   req.user = payload;
