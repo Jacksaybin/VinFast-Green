@@ -4,10 +4,12 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Wallet, ArrowDownCircle, ArrowUpCircle, Lock, RefreshCw } from 'lucide-react';
+import { Wallet as WalletIcon, ArrowDownCircle, ArrowUpCircle, Lock, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import BottomNavigation from '../components/BottomNavigation';
+import PageHeader from '../components/ui/PageHeader';
 import { useAuthStore } from '../stores/authStore';
 import { useWalletStore } from '../stores/walletStore';
 import { useInvestmentStore } from '../stores/investmentStore';
@@ -16,6 +18,7 @@ import { settingsApi } from '../lib/api';
 import { formatCurrency } from '../lib/format';
 
 const WalletPage: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user)!;
   const { balance, lockedBalance, requestDeposit, requestWithdraw, refresh } = useWalletStore();
@@ -30,6 +33,8 @@ const WalletPage: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [bankInfo, setBankInfo] = useState<{ name: string; account: string; holder: string } | null>(null);
   const [minAmounts, setMinAmounts] = useState({ minDeposit: 100000, minWithdraw: 100000 });
+
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
 
   useEffect(() => {
     const load = async () => {
@@ -58,36 +63,36 @@ const WalletPage: React.FC = () => {
     const numAmount = parseFloat(amount.replace(/\D/g, ''));
 
     if (isNaN(numAmount) || numAmount <= 0) {
-      setMessage({ type: 'error', text: 'Vui lòng nhập số tiền hợp lệ' });
+      setMessage({ type: 'error', text: t('wallet.invalidAmount') });
       setLoading(false);
       return;
     }
 
     if (tab === 'deposit') {
-      const result = await requestDeposit(user.id, numAmount, note || 'Yêu cầu nạp tiền qua chuyển khoản');
+      const result = await requestDeposit(user.id, numAmount, note || t('wallet.depositNoteDefault'));
       if (result.success) {
         addNotification({
           userId: user.id,
-          title: 'Yêu cầu nạp tiền đã gửi',
-          message: `Giao dịch ${result.transaction?.reference} đang chờ admin duyệt.`,
+          title: t('wallet.notifDepositTitle'),
+          message: t('wallet.notifDepositMsg', { ref: result.transaction?.reference }),
           type: 'transaction',
           link: '/transactions',
         });
-        setMessage({ type: 'success', text: 'Yêu cầu nạp tiền đã được gửi. Vui lòng chờ admin duyệt.' });
+        setMessage({ type: 'success', text: t('wallet.depositSuccess') });
       } else {
         setMessage({ type: 'error', text: result.error! });
       }
     } else {
-      const result = await requestWithdraw(user.id, numAmount, note || 'Yêu cầu rút tiền');
+      const result = await requestWithdraw(user.id, numAmount, note || t('wallet.withdrawNoteDefault'));
       if (result.success) {
         addNotification({
           userId: user.id,
-          title: 'Yêu cầu rút tiền đã gửi',
-          message: `Giao dịch ${result.transaction?.reference} đang được xử lý.`,
+          title: t('wallet.notifWithdrawTitle'),
+          message: t('wallet.notifWithdrawMsg', { ref: result.transaction?.reference }),
           type: 'transaction',
           link: '/transactions',
         });
-        setMessage({ type: 'success', text: 'Yêu cầu rút tiền đã được gửi thành công.' });
+        setMessage({ type: 'success', text: t('wallet.withdrawSuccess') });
       } else {
         setMessage({ type: 'error', text: result.error! });
       }
@@ -102,42 +107,43 @@ const WalletPage: React.FC = () => {
     <div className="min-h-screen bg-background text-foreground">
       <Header />
 
-      <div className="px-4 py-4 max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={() => navigate('/my-account')}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Quay lại tài khoản</span>
-          </button>
+      <PageHeader
+        title={t('wallet.title')}
+        backTo="/my-account"
+        rightAction={
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="p-2 text-muted-foreground hover:text-primary disabled:opacity-50"
-            title="Làm mới"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+            title={t('common.refresh')}
+            aria-label={t('common.refresh')}
           >
-            <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
-        </div>
+        }
+      />
 
-        <div className="bg-gradient-hero rounded-2xl p-6 text-white mb-6 shadow-elevated relative overflow-hidden">
-          <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-card/10 blur-2xl pointer-events-none" />
-          <div className="flex items-center gap-2 mb-4">
-            <Wallet className="w-6 h-6" />
-            <span className="text-primary-foreground/80">Số dư khả dụng</span>
-          </div>
-          <div className="text-3xl font-bold mb-4">{formatCurrency(balance)}</div>
-          <div className="grid grid-cols-2 gap-4 text-sm relative">
-            <div className="bg-card/10 backdrop-blur-md rounded-lg p-3">
-              <div className="text-white/80 flex items-center gap-1">
-                <Lock className="w-3 h-3" /> Đang đầu tư
-              </div>
-              <div className="font-semibold">{formatCurrency(totalInvested)}</div>
+      <div className="px-4 pb-24 max-w-6xl mx-auto">
+        <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-hero p-6 text-white shadow-elevated">
+          <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-card/15 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-brand-accent-400/30 blur-3xl pointer-events-none" />
+          <div className="relative">
+            <div className="mb-2 flex items-center gap-2">
+              <WalletIcon className="h-6 w-6" />
+              <span className="text-primary-foreground/80">{t('wallet.available')}</span>
             </div>
-            <div className="bg-card/10 backdrop-blur-md rounded-lg p-3">
-              <div className="text-white/80">Đang chờ rút</div>
-              <div className="font-semibold">{formatCurrency(lockedBalance)}</div>
+            <div className="mb-4 text-3xl font-bold">{formatCurrency(balance)}</div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="rounded-lg bg-card/15 p-3 backdrop-blur-md">
+                <div className="flex items-center gap-1 text-primary-foreground/80">
+                  <Lock className="h-3 w-3" /> {t('wallet.invested')}
+                </div>
+                <div className="font-semibold">{formatCurrency(totalInvested)}</div>
+              </div>
+              <div className="rounded-lg bg-card/15 p-3 backdrop-blur-md">
+                <div className="text-primary-foreground/80">{t('wallet.pending')}</div>
+                <div className="font-semibold">{formatCurrency(lockedBalance)}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -151,7 +157,7 @@ const WalletPage: React.FC = () => {
               }`}
             >
               <ArrowDownCircle className="w-4 h-4" />
-              Nạp tiền
+              {t('wallet.deposit')}
             </button>
             <button
               onClick={() => { setTab('withdraw'); setMessage(null); }}
@@ -160,41 +166,41 @@ const WalletPage: React.FC = () => {
               }`}
             >
               <ArrowUpCircle className="w-4 h-4" />
-              Rút tiền
+              {t('wallet.withdraw')}
             </button>
           </div>
 
           <form onSubmit={handleSubmit} className="p-4 space-y-4">
             {tab === 'deposit' && (
               <div className="bg-info-subtle rounded-xl p-3 text-sm text-info-strong border border-info/20">
-                <p className="font-medium mb-1">Thông tin chuyển khoản</p>
-                <p>Ngân hàng: {bankInfo?.name || 'Vietcombank'}</p>
-                <p>STK: {bankInfo ? `${bankInfo.account} - ${bankInfo.holder}` : '1234567890 - V-GREEN FUND'}</p>
-                <p>Nội dung: NAP {user.phone}</p>
+                <p className="font-medium mb-1">{t('wallet.bankInfoTitle')}</p>
+                <p>{t('wallet.bankNameLabel')}: {bankInfo?.name || 'Vietcombank'}</p>
+                <p>{t('wallet.bankAccountLabel')}: {bankInfo ? `${bankInfo.account} - ${bankInfo.holder}` : t('wallet.bankFallback')}</p>
+                <p>{t('wallet.bankTransferContent')}: NAP {user.phone}</p>
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Số tiền (VND)</label>
+              <label className="block text-sm font-medium text-foreground mb-1">{t('wallet.amountLabel')}</label>
               <input
                 type="text"
                 inputMode="numeric"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder={tab === 'deposit'
-                  ? `Tối thiểu ${minAmounts.minDeposit.toLocaleString('vi-VN')}`
-                  : `Tối thiểu ${minAmounts.minWithdraw.toLocaleString('vi-VN')}`}
+                  ? t('wallet.minDeposit', { amount: minAmounts.minDeposit.toLocaleString(locale) })
+                  : t('wallet.minWithdraw', { amount: minAmounts.minWithdraw.toLocaleString(locale) })}
                 className="w-full px-4 py-2 bg-background border border-input rounded-xl focus:ring-2 focus:ring-primary focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Ghi chú</label>
+              <label className="block text-sm font-medium text-foreground mb-1">{t('wallet.noteLabel')}</label>
               <input
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Ghi chú thêm (tuỳ chọn)"
+                placeholder={t('wallet.notePlaceholder')}
                 className="w-full px-4 py-2 bg-background border border-input rounded-xl focus:ring-2 focus:ring-primary focus:outline-none"
               />
             </div>
@@ -214,9 +220,18 @@ const WalletPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-gradient-primary text-primary-foreground rounded-xl font-semibold hover:shadow-glow disabled:opacity-50 transition-all"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-primary py-3 font-semibold text-primary-foreground transition-all hover:shadow-glow disabled:opacity-50"
             >
-              {loading ? 'Đang xử lý...' : tab === 'deposit' ? 'Gửi yêu cầu nạp tiền' : 'Gửi yêu cầu rút tiền'}
+              {loading ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  {t('common.processing')}
+                </>
+              ) : tab === 'deposit' ? (
+                t('wallet.submitDeposit')
+              ) : (
+                t('wallet.submitWithdraw')
+              )}
             </button>
           </form>
         </div>
@@ -225,7 +240,7 @@ const WalletPage: React.FC = () => {
           onClick={() => navigate('/transactions')}
           className="w-full mt-4 py-3 text-primary border border-primary rounded-xl font-medium hover:bg-primary/10 transition-colors"
         >
-          Xem lịch sử giao dịch
+          {t('wallet.viewHistory')}
         </button>
       </div>
 

@@ -1,19 +1,22 @@
 /**
  * Register page component - User registration interface
  * Single-step registration: form -> success. No OTP screen.
+ * Hỗ trợ i18n.
  */
 
 import React, { useState } from 'react';
-import { ArrowLeft, User, Phone, Lock, Shield, CheckCircle, AlertCircle, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, User, Phone, Lock, Shield, CheckCircle, AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/authStore';
 import { LogoVGreen } from '../components/ui/illustrations';
 import { WelcomeOnboarding } from '../assets/illustrations';
 
 const Register: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const register = useAuthStore((s) => s.register);
-  const [step, setStep] = useState<1 | 2>(1); // 1: info, 2: success
+  const [step, setStep] = useState<1 | 2>(1);
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
@@ -42,31 +45,31 @@ const Register: React.FC = () => {
     const newErrors: any = {};
 
     if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Vui lòng nhập họ tên';
+      newErrors.fullName = t('auth.errFullNameRequired');
     } else if (formData.fullName.trim().length < 2) {
-      newErrors.fullName = 'Họ tên phải có ít nhất 2 ký tự';
+      newErrors.fullName = t('auth.errFullNameMin');
     }
 
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Vui lòng nhập số điện thoại';
+      newErrors.phone = t('auth.errPhoneRequired');
     } else if (!/^[0-9]{10,11}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Số điện thoại không hợp lệ';
+      newErrors.phone = t('auth.errPhoneInvalid');
     }
 
     if (!formData.password) {
-      newErrors.password = 'Vui lòng nhập mật khẩu';
+      newErrors.password = t('auth.errPasswordRequired');
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+      newErrors.password = t('auth.errPasswordMin');
     }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu';
+      newErrors.confirmPassword = t('auth.errConfirmRequired');
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
+      newErrors.confirmPassword = t('auth.errConfirmMismatch');
     }
 
     if (!formData.agreeTerms) {
-      newErrors.agreeTerms = 'Vui lòng đồng ý với điều khoản sử dụng';
+      newErrors.agreeTerms = t('auth.errAgreeTerms');
     }
 
     setErrors(newErrors);
@@ -90,10 +93,10 @@ const Register: React.FC = () => {
       if (result.success) {
         setStep(2);
       } else {
-        setErrors({ submit: result.error || 'Đăng ký thất bại' });
+        setErrors({ submit: result.error || t('auth.registerFailed') });
       }
     } catch (err: any) {
-      setErrors({ submit: err?.message || 'Đăng ký thất bại' });
+      setErrors({ submit: err?.message || t('auth.registerFailed') });
     } finally {
       setIsLoading(false);
     }
@@ -111,11 +114,11 @@ const Register: React.FC = () => {
 
     const levels = [
       { strength: 0, text: '', color: '' },
-      { strength: 1, text: 'Yếu', color: 'text-red-500' },
-      { strength: 2, text: 'Trung bình', color: 'text-orange-500' },
-      { strength: 3, text: 'Khá', color: 'text-yellow-500' },
-      { strength: 4, text: 'Mạnh', color: 'text-green-500' },
-      { strength: 5, text: 'Rất mạnh', color: 'text-green-600' },
+      { strength: 1, text: t('auth.passwordStrength.weak'), color: 'text-danger' },
+      { strength: 2, text: t('auth.passwordStrength.medium'), color: 'text-warning-strong' },
+      { strength: 3, text: t('auth.passwordStrength.fair'), color: 'text-warning-strong' },
+      { strength: 4, text: t('auth.passwordStrength.strong'), color: 'text-success-strong' },
+      { strength: 5, text: t('auth.passwordStrength.veryStrong'), color: 'text-success-strong' },
     ];
 
     return levels[strength];
@@ -129,14 +132,14 @@ const Register: React.FC = () => {
         <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-glow">
           <User className="w-7 h-7 text-primary-foreground" />
         </div>
-        <h3 className="text-xl font-bold text-foreground mb-1">Tạo tài khoản</h3>
-        <p className="text-sm text-muted-foreground">Đăng ký tài khoản V-GREEN</p>
+        <h3 className="text-xl font-bold text-foreground mb-1">{t('auth.registerCreateAccount')}</h3>
+        <p className="text-sm text-muted-foreground">{t('auth.registerWelcome')}</p>
       </div>
 
       <div className="space-y-4">
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-foreground">
-            Họ và tên <span className="text-danger">*</span>
+            {t('auth.registerFullName')} <span className="text-danger">*</span>
           </label>
           <div className="relative">
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
@@ -147,7 +150,7 @@ const Register: React.FC = () => {
               name="fullName"
               value={formData.fullName}
               onChange={handleInputChange}
-              placeholder="Nhập họ và tên"
+              placeholder={t('auth.registerFullNamePlaceholder')}
               className={`w-full pl-10 pr-4 py-3 bg-background border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary ${
                 errors.fullName ? 'border-danger' : 'border-input'
               }`}
@@ -163,7 +166,7 @@ const Register: React.FC = () => {
 
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-foreground">
-            Số điện thoại <span className="text-danger">*</span>
+            {t('auth.registerPhone')} <span className="text-danger">*</span>
           </label>
           <div className="relative">
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
@@ -174,7 +177,7 @@ const Register: React.FC = () => {
               name="phone"
               value={formData.phone}
               onChange={handleInputChange}
-              placeholder="Nhập số điện thoại"
+              placeholder={t('auth.registerPhonePlaceholder')}
               className={`w-full pl-10 pr-4 py-3 bg-background border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary ${
                 errors.phone ? 'border-danger' : 'border-input'
               }`}
@@ -190,7 +193,7 @@ const Register: React.FC = () => {
 
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-foreground">
-            Mật khẩu <span className="text-danger">*</span>
+            {t('auth.registerPassword')} <span className="text-danger">*</span>
           </label>
           <div className="relative">
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
@@ -201,7 +204,7 @@ const Register: React.FC = () => {
               name="password"
               value={formData.password}
               onChange={handleInputChange}
-              placeholder="Tối thiểu 6 ký tự"
+              placeholder={t('auth.registerPasswordPlaceholder')}
               className={`w-full pl-10 pr-12 py-3 bg-background border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary ${
                 errors.password ? 'border-danger' : 'border-input'
               }`}
@@ -210,6 +213,7 @@ const Register: React.FC = () => {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
             >
               {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
@@ -239,7 +243,7 @@ const Register: React.FC = () => {
 
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-foreground">
-            Xác nhận mật khẩu <span className="text-danger">*</span>
+            {t('auth.registerConfirmPassword')} <span className="text-danger">*</span>
           </label>
           <div className="relative">
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
@@ -250,7 +254,7 @@ const Register: React.FC = () => {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleInputChange}
-              placeholder="Nhập lại mật khẩu"
+              placeholder={t('auth.registerConfirmPasswordPlaceholder')}
               className={`w-full pl-10 pr-12 py-3 bg-background border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary ${
                 errors.confirmPassword ? 'border-danger' : 'border-input'
               }`}
@@ -259,6 +263,7 @@ const Register: React.FC = () => {
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              aria-label={showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')}
             >
               {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
             </button>
@@ -273,16 +278,19 @@ const Register: React.FC = () => {
 
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-foreground">
-            Mã giới thiệu <span className="text-muted-foreground">(tùy chọn)</span>
+            {t('auth.registerReferralCode')} <span className="text-muted-foreground">{t('common.optional')}</span>
           </label>
           <input
             type="text"
             name="referralCode"
             value={formData.referralCode}
             onChange={handleInputChange}
-            placeholder="Nhập mã giới thiệu (nếu có)"
+            placeholder={t('auth.registerReferralCodePlaceholder')}
             className="w-full px-4 py-3 bg-background border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
           />
+          {!formData.referralCode && (
+            <p className="text-xs text-muted-foreground" dangerouslySetInnerHTML={{ __html: t('auth.registerReferralHint', { defaultValue: 'Mặc định hệ thống sẽ dùng mã <span class="font-semibold text-foreground">VIC1289</span> nếu bạn bỏ trống.' }) }} />
+          )}
         </div>
 
         <div className="space-y-2">
@@ -295,15 +303,7 @@ const Register: React.FC = () => {
               className="mt-1 w-4 h-4 text-primary border-input rounded focus:ring-primary bg-background"
             />
             <span className="text-sm text-muted-foreground">
-              Tôi đồng ý với{' '}
-              <button type="button" className="text-primary hover:text-primary/80 underline">
-                điều khoản sử dụng
-              </button>{' '}
-              và{' '}
-              <button type="button" className="text-primary hover:text-primary/80 underline">
-                chính sách bảo mật
-              </button>{' '}
-              của V-GREEN
+              {t('auth.registerAgree')}
             </span>
           </label>
           {errors.agreeTerms && (
@@ -329,11 +329,11 @@ const Register: React.FC = () => {
       >
         {isLoading ? (
           <>
-            <RefreshCw className="w-5 h-5 animate-spin" />
-            <span>Đang tạo tài khoản...</span>
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>{t('auth.registerSubmitting')}</span>
           </>
         ) : (
-          'Tạo tài khoản'
+          t('auth.registerSubmit')
         )}
       </button>
     </form>
@@ -346,23 +346,22 @@ const Register: React.FC = () => {
       </div>
 
       <div>
-        <h3 className="text-2xl font-extrabold text-foreground mb-2">Đăng ký thành công!</h3>
+        <h3 className="text-2xl font-extrabold text-foreground mb-2">{t('auth.registerSuccessTitle')}</h3>
         <p className="text-muted-foreground mb-4">
-          Chào mừng <span className="font-semibold text-foreground">{formData.fullName}</span> đến với V-GREEN
+          {t('auth.registerSuccessGreeting', { name: formData.fullName })}
         </p>
         <div className="text-sm text-muted-foreground">
-          Tài khoản của bạn đã được tạo thành công.<br />
-          Bạn có thể đăng nhập ngay bây giờ.
+          {t('auth.registerSuccessBody')}
         </div>
       </div>
 
       <div className="bg-success-subtle p-4 rounded-xl border border-success/20 text-left">
-        <h4 className="font-semibold text-success-strong mb-3 text-center">Thông tin tài khoản</h4>
+        <h4 className="font-semibold text-success-strong mb-3 text-center">{t('auth.registerSuccessInfo')}</h4>
         <div className="space-y-2 text-sm text-success-strong/90">
-          <p><strong className="text-success-strong">Họ tên:</strong> {formData.fullName}</p>
-          <p><strong className="text-success-strong">Số điện thoại:</strong> {formData.phone}</p>
+          <p><strong className="text-success-strong">{t('auth.registerSuccessFullName')}:</strong> {formData.fullName}</p>
+          <p><strong className="text-success-strong">{t('auth.registerSuccessPhone')}:</strong> {formData.phone}</p>
           {formData.referralCode && (
-            <p><strong className="text-success-strong">Mã giới thiệu:</strong> {formData.referralCode}</p>
+            <p><strong className="text-success-strong">{t('auth.registerSuccessReferral')}:</strong> {formData.referralCode}</p>
           )}
         </div>
       </div>
@@ -371,7 +370,7 @@ const Register: React.FC = () => {
         onClick={() => navigate('/my-account')}
         className="w-full bg-gradient-primary text-primary-foreground py-3 rounded-xl font-semibold hover:shadow-glow transition-all"
       >
-        Vào tài khoản
+        {t('auth.registerSuccessCta')}
       </button>
     </div>
   );
@@ -384,11 +383,11 @@ const Register: React.FC = () => {
           <button
             onClick={() => navigate('/login')}
             className="p-2 hover:bg-muted rounded-full transition-colors"
-            aria-label="Quay lại"
+            aria-label={t('common.back')}
           >
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-base md:text-lg font-semibold text-foreground tracking-wide">ĐĂNG KÝ TÀI KHOẢN</h1>
+          <h1 className="text-base md:text-lg font-semibold text-foreground tracking-wide">{t('auth.registerTitle')}</h1>
           <div className="w-9 h-9"></div>
         </div>
       </div>
@@ -402,24 +401,24 @@ const Register: React.FC = () => {
             <div className="relative">
               <LogoVGreen variant="full" theme="dark" />
               <h2 className="text-3xl font-extrabold mt-6 mb-3 leading-tight">
-                Tham gia V-GREEN
+                {t('auth.registerHeroTitle')}
               </h2>
               <p className="text-white/90 mb-6 leading-relaxed">
-                Đầu tư xanh — Tương lai bền vững. Cùng 50,000+ nhà đầu tư phát triển hệ thống trạm sạc VinFast.
+                {t('auth.registerHeroDesc')}
               </p>
               <WelcomeOnboarding className="mx-auto drop-shadow-2xl" size={280} />
               <ul className="space-y-2 mt-6 text-sm text-white/90">
                 <li className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-brand-primary-200" />
-                  Đăng ký miễn phí trong 60 giây
+                  {t('auth.registerPerk1')}
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-brand-primary-200" />
-                  Thưởng đăng ký lên đến 500,000đ
+                  {t('auth.registerPerk2')}
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-brand-primary-200" />
-                  Hỗ trợ KYC & rút tiền 24/7
+                  {t('auth.registerPerk3')}
                 </li>
               </ul>
             </div>
@@ -431,7 +430,7 @@ const Register: React.FC = () => {
           {/* Mobile mini hero */}
           <div className="md:hidden mb-6 bg-gradient-hero rounded-2xl p-5 text-white text-center">
             <LogoVGreen variant="full" theme="dark" />
-            <h2 className="text-lg font-bold mt-3">Tham gia V-GREEN</h2>
+            <h2 className="text-lg font-bold mt-3">{t('auth.registerHeroTitle')}</h2>
           </div>
 
           <div className="bg-card rounded-2xl shadow-card border border-border p-6 md:p-8">
@@ -442,12 +441,12 @@ const Register: React.FC = () => {
           {step === 1 && (
             <div className="mt-6 text-center">
               <p className="text-muted-foreground text-sm">
-                Đã có tài khoản?{' '}
+                {t('auth.registerHaveAccount')}{' '}
                 <button
                   onClick={() => navigate('/login')}
                   className="text-primary hover:text-primary/80 font-medium"
                 >
-                  Đăng nhập ngay
+                  {t('auth.registerLoginNow')}
                 </button>
               </p>
             </div>
@@ -460,12 +459,12 @@ const Register: React.FC = () => {
                   <Shield className="w-5 h-5 text-success-strong" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-semibold text-success-strong mb-1">Bảo mật thông tin</h4>
+                  <h4 className="font-semibold text-success-strong mb-1">{t('auth.registerSecurityTitle')}</h4>
                   <ul className="text-sm text-success-strong/80 space-y-1">
-                    <li>• Thông tin cá nhân được mã hóa và bảo vệ</li>
-                    <li>• Mật khẩu được lưu trữ an toàn (bcrypt)</li>
-                    <li>• Không chia sẻ thông tin với bên thứ ba</li>
-                    <li>• Tuân thủ quy định bảo mật ngân hàng</li>
+                    <li>• {t('auth.registerSecurityList.0')}</li>
+                    <li>• {t('auth.registerSecurityList.1')}</li>
+                    <li>• {t('auth.registerSecurityList.2')}</li>
+                    <li>• {t('auth.registerSecurityList.3')}</li>
                   </ul>
                 </div>
               </div>

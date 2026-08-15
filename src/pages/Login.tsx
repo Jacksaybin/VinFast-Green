@@ -1,16 +1,19 @@
 /**
  * Login page component - User authentication interface
  * Đã tinh chỉnh: split layout với SVG SecurityShield, design token, gradient hero.
+ * Hỗ trợ i18n.
  */
 
 import React, { useState } from 'react';
-import { ArrowLeft, Eye, EyeOff, Phone, Lock, Shield, User } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Phone, Lock, Shield, User, Loader2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/authStore';
 import { LogoVGreen } from '../components/ui/illustrations';
 import { SecurityShield } from '../assets/illustrations';
 
 const Login: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const login = useAuthStore((s) => s.login);
@@ -39,7 +42,7 @@ const Login: React.FC = () => {
     setIsLoading(false);
 
     if (!result.success) {
-      setError(result.error || 'Đăng nhập thất bại');
+      setError(result.error || t('auth.loginFailed'));
       return;
     }
 
@@ -61,11 +64,11 @@ const Login: React.FC = () => {
           <button
             onClick={() => navigate('/')}
             className="p-2 hover:bg-muted rounded-full transition-colors"
-            aria-label="Quay lại"
+            aria-label={t('common.back')}
           >
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-base md:text-lg font-semibold text-foreground tracking-wide">ĐĂNG NHẬP</h1>
+          <h1 className="text-base md:text-lg font-semibold text-foreground tracking-wide">{t('auth.loginTitle')}</h1>
           <div className="w-9 h-9" />
         </div>
       </div>
@@ -80,24 +83,24 @@ const Login: React.FC = () => {
             <div className="relative">
               <LogoVGreen variant="full" theme="dark" />
               <h2 className="text-3xl font-extrabold mt-6 mb-3 leading-tight">
-                Vì tương lai xanh
+                {t('auth.loginHeroTitle')}
               </h2>
               <p className="text-white/90 mb-8 leading-relaxed">
-                Đầu tư thông minh — Sinh lợi bền vững. Cùng V-GREEN phát triển hệ thống trạm sạc xe điện VinFast toàn cầu.
+                {t('auth.loginHeroDesc')}
               </p>
               <SecurityShield className="mx-auto drop-shadow-2xl" size={280} />
               <div className="grid grid-cols-3 gap-3 mt-6 text-center">
                 <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/20">
                   <div className="text-xl font-bold">SSL</div>
-                  <div className="text-[10px] text-white/80 uppercase">Mã hóa 256-bit</div>
+                  <div className="text-2xs uppercase text-white/80">{t('auth.security256')}</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/20">
                   <div className="text-xl font-bold">24/7</div>
-                  <div className="text-[10px] text-white/80 uppercase">Hỗ trợ</div>
+                  <div className="text-2xs uppercase text-white/80">{t('auth.support247')}</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/20">
                   <div className="text-xl font-bold">100%</div>
-                  <div className="text-[10px] text-white/80 uppercase">Bảo hiểm</div>
+                  <div className="text-2xs uppercase text-white/80">{t('auth.insurance100')}</div>
                 </div>
               </div>
             </div>
@@ -109,7 +112,7 @@ const Login: React.FC = () => {
           {/* Mobile mini hero */}
           <div className="md:hidden mb-6 bg-gradient-hero rounded-2xl p-5 text-white text-center">
             <LogoVGreen variant="full" theme="dark" />
-            <h2 className="text-lg font-bold mt-3">Vì tương lai xanh</h2>
+            <h2 className="text-lg font-bold mt-3">{t('auth.loginHeroTitle')}</h2>
           </div>
 
           <div className="bg-card rounded-2xl shadow-card border border-border p-6 md:p-8">
@@ -117,13 +120,13 @@ const Login: React.FC = () => {
               <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-glow">
                 <User className="w-7 h-7 text-primary-foreground" />
               </div>
-              <h3 className="text-xl font-bold text-foreground mb-1">Chào mừng trở lại!</h3>
-              <p className="text-sm text-muted-foreground">Đăng nhập để tiếp tục đầu tư</p>
+              <h3 className="text-xl font-bold text-foreground mb-1">{t('auth.loginWelcome')}</h3>
+              <p className="text-sm text-muted-foreground">{t('auth.loginSubtitle')}</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-foreground">Số điện thoại</label>
+                <label className="block text-sm font-medium text-foreground">{t('auth.loginPhone')}</label>
                 <div className="relative">
                   <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                     <Phone className="w-4 h-4 text-muted-foreground" />
@@ -133,7 +136,7 @@ const Login: React.FC = () => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    placeholder="Nhập số điện thoại"
+                    placeholder={t('auth.loginPhonePlaceholder')}
                     className="w-full pl-10 pr-4 py-3 bg-background border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     required
                   />
@@ -141,7 +144,7 @@ const Login: React.FC = () => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-foreground">Mật khẩu</label>
+                <label className="block text-sm font-medium text-foreground">{t('auth.loginPassword')}</label>
                 <div className="relative">
                   <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                     <Lock className="w-4 h-4 text-muted-foreground" />
@@ -151,7 +154,7 @@ const Login: React.FC = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleInputChange}
-                    placeholder="Nhập mật khẩu"
+                    placeholder={t('auth.loginPasswordPlaceholder')}
                     className="w-full pl-10 pr-12 py-3 bg-background border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     required
                   />
@@ -159,7 +162,7 @@ const Login: React.FC = () => {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                    aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -179,11 +182,11 @@ const Login: React.FC = () => {
               >
                 {isLoading ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Đang đăng nhập...</span>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>{t('auth.loginLoading')}</span>
                   </>
                 ) : (
-                  'Đăng nhập'
+                  t('auth.loginSubmit')
                 )}
               </button>
             </form>
@@ -193,13 +196,13 @@ const Login: React.FC = () => {
                 onClick={() => navigate('/register')}
                 className="text-sm text-primary hover:text-primary/80 font-medium"
               >
-                Đăng ký tài khoản
+                {t('auth.loginRegister')}
               </button>
               <button
                 onClick={() => navigate('/forgot-password')}
                 className="text-sm text-muted-foreground hover:text-foreground"
               >
-                Quên mật khẩu?
+                {t('auth.loginForgot')}
               </button>
             </div>
           </div>
@@ -211,10 +214,9 @@ const Login: React.FC = () => {
                 <Shield className="w-5 h-5 text-success-strong" />
               </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-success-strong mb-1">Bảo mật tuyệt đối</h4>
+                <h4 className="font-semibold text-success-strong mb-1">{t('auth.loginSecurityTitle')}</h4>
                 <p className="text-sm text-success-strong/80 leading-relaxed">
-                  Thông tin của bạn được mã hóa SSL 256-bit và tuân thủ các tiêu chuẩn bảo mật quốc tế.
-                  V-GREEN cam kết bảo vệ tuyệt đối quyền riêng tư và an toàn tài khoản của bạn.
+                  {t('auth.loginSecurityDesc')}
                 </p>
               </div>
             </div>

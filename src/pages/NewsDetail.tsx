@@ -1,14 +1,21 @@
 /**
  * NewsDetail page component - Xem chi tiết một bài viết
  * Nguồn: newsApi.getNewsBySlug (có fallback nội dung tối thiểu khi offline)
+ * Đã tinh chỉnh: token semantic 100%, fallback thumbnail gradient nội bộ (không CDN ngoài).
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { ArrowLeft, Clock, Eye, Share2, Calendar } from 'lucide-react';
+import { ArrowLeft, Clock, Eye, Share2, Calendar, Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import BottomNavigation from '../components/BottomNavigation';
+import PageHeader from '../components/ui/PageHeader';
+import { Loading } from '../components/ui/StateViews';
+import { Illustration, NoNotifications } from '../assets/illustrations';
+import { EmptyState } from '../components/ui/EmptyState';
 import { newsApi } from '../lib/api';
+import { cn } from '../lib/utils';
 
 interface NewsDetail {
   id: string;
@@ -26,7 +33,46 @@ interface NewsDetail {
   publishedAt: string;
 }
 
+const CATEGORY_LABEL_KEYS: Record<string, string> = {
+  vgreen: 'newsDetail.categoryVgreen',
+  market: 'newsDetail.categoryMarket',
+  policy: 'newsDetail.categoryPolicy',
+};
+const CATEGORY_BADGE: Record<string, string> = {
+  vgreen: 'bg-success-subtle text-primary',
+  market: 'bg-info-subtle text-info',
+  policy: 'bg-warning-subtle text-warning-strong',
+};
+
+const HeroPlaceholder: React.FC<{ category: string }> = ({ category }) => {
+  const gradient =
+    category === 'market'
+      ? 'from-info to-brand-accent-700'
+      : category === 'policy'
+        ? 'from-warning to-brand-energy-orange'
+        : 'from-brand-primary-600 to-brand-accent-700';
+  const name = category === 'policy' ? 'ChargingStationHero' : category === 'market' ? 'EnergyDashboard' : 'EVNetworkMap';
+  return (
+    <div className={cn('relative flex h-56 w-full items-center justify-center overflow-hidden bg-gradient-to-br', gradient)}>
+      <div className="absolute inset-0 opacity-30"
+        style={{
+          backgroundImage:
+            "radial-gradient(at 30% 30%, rgba(255,255,255,0.25) 0px, transparent 50%), radial-gradient(at 70% 70%, rgba(255,255,255,0.15) 0px, transparent 50%)",
+        }}
+      />
+      <div className="relative z-10 h-3/5 w-3/5 max-w-[240px] text-white">
+        <Illustration name={name as never} />
+      </div>
+      <div className="absolute right-4 bottom-4 inline-flex items-center gap-1.5 rounded-full bg-card/20 px-2.5 py-1 text-xs text-white backdrop-blur-md">
+        <Sparkles className="h-3 w-3" />
+        V-GREEN
+      </div>
+    </div>
+  );
+};
+
 const NewsDetail: React.FC = () => {
+  const { t } = useTranslation();
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [article, setArticle] = useState<NewsDetail | null>(null);
@@ -50,7 +96,6 @@ const NewsDetail: React.FC = () => {
       } catch {
         // Network error - try list fallback
       }
-      // Fallback: search list for matching slug
       try {
         const listResult = await newsApi.getNews(undefined, 1, 50);
         if (!cancelled && listResult?.news) {
@@ -58,7 +103,7 @@ const NewsDetail: React.FC = () => {
           if (match) {
             setArticle({
               ...match,
-              content: match.summary || '<p>Nội dung bài viết đang được cập nhật.</p>',
+              content: match.summary || `<p>${t('newsDetail.contentUpdating')}</p>`,
               author: '',
             });
             return;
@@ -71,8 +116,10 @@ const NewsDetail: React.FC = () => {
     fetchWithFallback().finally(() => {
       if (!cancelled) setLoading(false);
     });
-    return () => { cancelled = true; };
-  }, [slug]);
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, t]);
 
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -87,107 +134,150 @@ const NewsDetail: React.FC = () => {
         await navigator.share({ title: article?.title, url });
       } else {
         await navigator.clipboard.writeText(url);
-        alert('Đã sao chép liên kết bài viết!');
+        alert(t('newsDetail.shareCopied'));
       }
     } catch {
       // user cancelled share
     }
   };
 
+  const hasImage = useMemo(() => Boolean(article?.imageUrl), [article]);
+
+  const categoryLabel = (cat: string) => {
+    const key = CATEGORY_LABEL_KEYS[cat];
+    return key ? t(key) : cat;
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
-      <div className="max-w-2xl mx-auto px-4 pb-24">
-        <div className="sticky top-0 z-10 bg-card/90 backdrop-blur-sm py-3 mb-4 flex items-center justify-between">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center text-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="w-5 h-5 mr-1" />
-            <span className="text-sm font-medium">Quay lại</span>
-          </button>
-          <button
-            onClick={handleShare}
-            className="flex items-center text-muted-foreground hover:text-info p-2 rounded-lg"
-          >
-            <Share2 className="w-5 h-5" />
-          </button>
-        </div>
-
+      <div className="mx-auto max-w-2xl px-4 pb-24">
         {loading ? (
-          <div className="text-center py-16 text-muted-foreground text-sm">Đang tải bài viết...</div>
+          <Loading fullScreen text={t('newsDetail.loading')} />
         ) : notFound || !article ? (
-          <div className="text-center py-16">
-            <p className="text-muted-foreground text-sm mb-4">Không tìm thấy bài viết.</p>
-            <button
-              onClick={() => navigate('/news')}
-              className="px-4 py-2 bg-info text-white rounded-lg text-sm"
-            >
-              Về trang tin tức
-            </button>
+          <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+            <EmptyState
+              illustration={<NoNotifications size={140} />}
+              title={t('newsDetail.notFoundTitle')}
+              description={t('newsDetail.notFoundDesc')}
+              action={
+                <button
+                  onClick={() => navigate('/news')}
+                  className="bg-info text-primary-foreground rounded-xl px-5 py-2.5 font-semibold hover:shadow-glow transition-all"
+                >
+                  {t('newsDetail.backToNews')}
+                </button>
+              }
+            />
           </div>
         ) : (
-          <article className="bg-card rounded-xl shadow-card overflow-hidden">
-            <img
-              src={article.imageUrl || 'https://pub-cdn.sider.ai/u/U0E5HLZKXNK/web-coder/68750791b1dac45b18d4a236/resource/30b60eaf-2cd0-4610-82ee-48710165f9d5.jpg'}
-              alt={article.title}
-              className="w-full h-56 object-cover"
+          <>
+            <PageHeader
+              title=""
+              onBack={() => navigate('/news')}
+              sticky
+              rightAction={
+                <button
+                  onClick={handleShare}
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-label={t('newsDetail.share')}
+                >
+                  <Share2 className="h-5 w-5" />
+                </button>
+              }
             />
-            <div className="p-5">
-              <div className="flex items-center space-x-2 mb-3">
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  article.category === 'vgreen' ? 'bg-success-subtle text-primary' :
-                  article.category === 'market' ? 'bg-info-subtle text-info' :
-                  'bg-purple-100 text-purple-600'
-                }`}>
-                  {article.category === 'vgreen' ? 'V-GREEN' : article.category === 'market' ? 'Thị trường' : 'Chính sách'}
-                </span>
-                {article.isFeatured && (
-                  <span className="bg-warning-subtle text-warning-strong px-2 py-1 rounded text-xs font-medium">Nổi bật</span>
+
+            <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+              {hasImage ? (
+                <img
+                  src={article.imageUrl!}
+                  alt={article.title}
+                  className="h-56 w-full object-cover"
+                />
+              ) : (
+                <HeroPlaceholder category={article.category} />
+              )}
+              <div className="p-5">
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <span
+                    className={cn(
+                      'rounded px-2 py-0.5 text-xs font-medium',
+                      CATEGORY_BADGE[article.category] ||
+                        'bg-muted text-muted-foreground',
+                    )}
+                  >
+                    {categoryLabel(article.category)}
+                  </span>
+                  {article.isFeatured && (
+                    <span className="rounded bg-warning-subtle px-2 py-0.5 text-xs font-medium text-warning-strong">
+                      {t('newsDetail.featured')}
+                    </span>
+                  )}
+                </div>
+
+                <h1 className="mb-4 text-xl font-bold leading-snug text-foreground md:text-2xl">
+                  {article.title}
+                </h1>
+
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-4 text-xs text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span className="flex items-center">
+                      <Calendar className="mr-1 h-3.5 w-3.5" />
+                      {formatDate(article.publishedAt)}
+                    </span>
+                    <span className="flex items-center">
+                      <Clock className="mr-1 h-3.5 w-3.5" />
+                      {t('newsDetail.minutes', { count: article.readTime })}
+                    </span>
+                    <span className="flex items-center">
+                      <Eye className="mr-1 h-3.5 w-3.5" />
+                      {formatViews(article.views)}
+                    </span>
+                  </div>
+                  {article.author && (
+                    <span className="text-muted-foreground">{t('newsDetail.byAuthor', { author: article.author })}</span>
+                  )}
+                </div>
+
+                {article.summary && (
+                  <p className="mb-4 font-medium leading-relaxed text-muted-foreground">
+                    {article.summary}
+                  </p>
+                )}
+
+                <div
+                  className="prose prose-sm max-w-none leading-relaxed text-foreground"
+                  dangerouslySetInnerHTML={{
+                    __html: article.content || `<p>${t('newsDetail.noContent')}</p>`,
+                  }}
+                />
+
+                {article.tags && article.tags.length > 0 && (
+                  <div className="mt-6 flex flex-wrap gap-2 border-t border-border pt-4">
+                    {article.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
+            </article>
+          </>
+        )}
 
-              <h1 className="text-2xl font-bold text-foreground mb-4 leading-snug">{article.title}</h1>
-
-              <div className="flex items-center justify-between text-xs text-muted-foreground pb-4 border-b border-border mb-4">
-                <div className="flex items-center space-x-3">
-                  <span className="flex items-center">
-                    <Calendar className="w-3.5 h-3.5 mr-1" />
-                    {formatDate(article.publishedAt)}
-                  </span>
-                  <span className="flex items-center">
-                    <Clock className="w-3.5 h-3.5 mr-1" />
-                    {article.readTime} phút
-                  </span>
-                  <span className="flex items-center">
-                    <Eye className="w-3.5 h-3.5 mr-1" />
-                    {formatViews(article.views)}
-                  </span>
-                </div>
-                {article.author && (
-                  <span className="text-muted-foreground">Bởi {article.author}</span>
-                )}
-              </div>
-
-              {article.summary && (
-                <p className="text-muted-foreground font-medium mb-4 leading-relaxed">{article.summary}</p>
-              )}
-
-              <div
-                className="prose prose-sm max-w-none text-foreground leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: article.content || '<p>Bài viết chưa có nội dung chi tiết.</p>' }}
-              />
-
-              {(article.tags && article.tags.length > 0) && (
-                <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t border-border">
-                  {article.tags.map((tag) => (
-                    <span key={tag} className="bg-muted text-muted-foreground px-3 py-1 rounded-full text-xs">{tag}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </article>
+        {/* Empty fallback Back button if loading or any other state without page header */}
+        {loading && (
+          <div className="mt-4 flex items-center gap-2 text-muted-foreground">
+            <ArrowLeft className="h-5 w-5" />
+            <button onClick={() => navigate(-1)} className="text-sm">
+              {t('common.back')}
+            </button>
+          </div>
         )}
       </div>
 

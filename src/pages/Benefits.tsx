@@ -5,6 +5,7 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Gift, Calendar, TrendingUp, Star, ChevronRight, Users, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import BottomNavigation from '../components/BottomNavigation';
 import { formatCurrency } from '../lib/format';
@@ -13,6 +14,7 @@ import { usePackageStore } from '../stores/packageStore';
 import { authApi } from '../lib/api';
 
 const Benefits: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const packages = usePackageStore((s) => s.packages);
@@ -47,15 +49,17 @@ const Benefits: React.FC = () => {
   const packagesWithBonus = packages.filter((pkg) => pkg.details?.schedulingBonus);
 
   const referralBenefits = [
-    { level: 'Cấp 1', rate: '5%', desc: 'Hoa hồng từ người được giới thiệu trực tiếp' },
-    { level: 'Cấp 2', rate: '2%', desc: 'Hoa hồng từ cấp dưới thứ hai' },
-    { level: 'Cấp 3', rate: '1%', desc: 'Hoa hồng từ cấp dưới thứ ba' },
+    { level: t('benefits.level1'), rate: '5%', desc: t('benefits.level1Desc') },
+    { level: t('benefits.level2'), rate: '2%', desc: t('benefits.level2Desc') },
+    { level: t('benefits.level3'), rate: '1%', desc: t('benefits.level3Desc') },
   ];
 
   const formatPhone = (phone: string) => {
     if (!phone) return '';
     return phone.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3');
   };
+
+  const dateLocale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
 
   return (
     <div className="min-h-screen bg-background">
@@ -66,16 +70,17 @@ const Benefits: React.FC = () => {
           <button
             onClick={() => navigate('/')}
             className="bg-card/90 backdrop-blur-sm p-2 rounded-full shadow-elevated"
+            aria-label={t('common.back')}
           >
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
         </div>
 
-        <div className="relative h-40 bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+        <div className="relative h-40 bg-gradient-to-br from-brand-energy-yellow to-brand-energy-orange flex items-center justify-center">
           <div className="relative z-10 text-center px-4">
             <Gift className="w-10 h-10 text-white mx-auto mb-2" />
-            <h1 className="text-2xl font-bold text-white">Phúc lợi & Thưởng</h1>
-            <p className="text-amber-100 text-sm">Ưu đãi dành cho nhà đầu tư V-GREEN</p>
+            <h1 className="text-2xl font-bold text-white">{t('benefits.title')}</h1>
+            <p className="text-white/90 text-sm">{t('benefits.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -83,40 +88,39 @@ const Benefits: React.FC = () => {
       <div className="px-4 pb-24 -mt-6 relative z-10 space-y-6">
         {user && (
           <div className="bg-card rounded-xl shadow-card p-4">
-            <h2 className="text-sm font-semibold text-muted-foreground mb-1">Mã giới thiệu của bạn</h2>
+            <h2 className="text-sm font-semibold text-muted-foreground mb-1">{t('benefits.yourReferralCode')}</h2>
             <div className="flex items-center justify-between">
               <span className="text-xl font-bold text-primary">{user.referralCode}</span>
               <button
                 onClick={() => navigator.clipboard.writeText(user.referralCode)}
                 className="text-sm text-info hover:underline"
               >
-                Sao chép
+                {t('benefits.copy')}
               </button>
             </div>
           </div>
         )}
 
-        {/* Referral commission summary */}
         {user && (
-          <div className="bg-gradient-to-br from-brand-primary-600 to-emerald-700 rounded-xl shadow p-5 text-white">
+          <div className="bg-gradient-to-br from-brand-primary-600 to-brand-primary-700 rounded-xl shadow p-5 text-white">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="font-semibold">{commissionCount} khoản hoa hồng đã nhận</h2>
-                <p className="text-primary-foreground text-sm">Tổng hoa hồng giới thiệu</p>
+                <h2 className="font-semibold">{t('benefits.commissionsReceived', { count: commissionCount })}</h2>
+                <p className="text-primary-foreground text-sm">{t('benefits.totalReferralCommission')}</p>
               </div>
               <Wallet className="w-8 h-8 text-primary-foreground/80" />
             </div>
             <div className="text-3xl font-bold">{formatCurrency(totalCommission)}</div>
             <div className="mt-3 text-sm text-primary-foreground">
-              {referrals.length} người được giới thiệu
+              {t('benefits.friendsReferred', { count: referrals.length })}
             </div>
           </div>
         )}
 
         <div className="bg-card rounded-xl shadow-card p-4">
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-            <Calendar className="w-5 h-5 text-amber-500" />
-            Thưởng đặt lịch
+            <Calendar className="w-5 h-5 text-warning-strong" />
+            {t('benefits.scheduleBonus')}
           </h2>
           <div className="space-y-3">
             {packagesWithBonus.slice(0, 6).map((pkg) => (
@@ -127,7 +131,7 @@ const Benefits: React.FC = () => {
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{pkg.name}</p>
-                  <p className="text-xs text-muted-foreground">Kỳ hạn {pkg.investmentPeriod} ngày</p>
+                  <p className="text-xs text-muted-foreground">{t('benefits.periodDays', { count: pkg.investmentPeriod })}</p>
                 </div>
                 <div className="text-right flex-shrink-0 ml-2">
                   <p className="text-sm font-bold text-warning-strong">
@@ -142,8 +146,8 @@ const Benefits: React.FC = () => {
 
         <div className="bg-card rounded-xl shadow-card p-4">
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-            <Star className="w-5 h-5 text-yellow-500" />
-            Hoa hồng giới thiệu
+            <Star className="w-5 h-5 text-warning-strong" />
+            {t('benefits.referralCommission')}
           </h2>
           <div className="space-y-3">
             {referralBenefits.map((item) => (
@@ -161,18 +165,17 @@ const Benefits: React.FC = () => {
           </div>
         </div>
 
-        {/* Referral list */}
         {user && (
           <div className="bg-card rounded-xl shadow-card p-4">
             <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
               <Users className="w-5 h-5 text-info" />
-              Danh sách người được giới thiệu
+              {t('benefits.referredList')}
             </h2>
             {loadingReferrals ? (
-              <p className="text-sm text-muted-foreground text-center py-4">Đang tải...</p>
+              <p className="text-sm text-muted-foreground text-center py-4">{t('benefits.loading')}</p>
             ) : referrals.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Bạn chưa có người giới thiệu nào. Chia sẻ mã giới thiệu để nhận hoa hồng ngay!
+                {t('benefits.noReferrals')}
               </p>
             ) : (
               <div className="space-y-2">
@@ -190,7 +193,7 @@ const Benefits: React.FC = () => {
                     <span className={`text-xs px-2 py-1 rounded-full ${
                       r.status === 'active' ? 'bg-success-subtle text-primary' : 'bg-muted text-muted-foreground'
                     }`}>
-                      {new Date(r.createdAt).toLocaleDateString('vi-VN')}
+                      {new Date(r.createdAt).toLocaleDateString(dateLocale)}
                     </span>
                   </div>
                 ))}
@@ -200,23 +203,23 @@ const Benefits: React.FC = () => {
         )}
 
         <div className="bg-gradient-to-br from-brand-primary-600 to-brand-primary-700 rounded-xl p-6 text-white text-center">
-          <h3 className="text-lg font-bold mb-2">Mời bạn bè, nhận thưởng</h3>
+          <h3 className="text-lg font-bold mb-2">{t('benefits.inviteTitle')}</h3>
           <p className="text-primary-foreground text-sm mb-4">
-            Chia sẻ mã giới thiệu và nhận hoa hồng khi bạn bè đầu tư thành công
+            {t('benefits.inviteDesc')}
           </p>
           {!user ? (
             <button
               onClick={() => navigate('/register')}
               className="bg-card text-primary px-6 py-2 rounded-lg font-semibold hover:bg-success-subtle"
             >
-              Đăng ký ngay
+              {t('benefits.registerNow')}
             </button>
           ) : (
             <button
-              onClick={() => navigator.clipboard.writeText(`Đăng ký V-GREEN với mã giới thiệu ${user.referralCode}`)}
+              onClick={() => navigator.clipboard.writeText(t('benefits.inviteShareText', { code: user.referralCode }))}
               className="bg-card text-primary px-6 py-2 rounded-lg font-semibold hover:bg-success-subtle"
             >
-              Sao chép link giới thiệu
+              {t('benefits.copyInviteLink')}
             </button>
           )}
         </div>

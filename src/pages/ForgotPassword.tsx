@@ -2,14 +2,17 @@
  * Customer Service Contact page for password recovery
  * Đã tinh chỉnh: design token (bg-background, text-foreground, semantic colors),
  * gradient hero V-GREEN (thay vì blue), thêm SecurityShield icon với animation.
+ * Hỗ trợ i18n.
  */
 
 import React from 'react';
 import { ArrowLeft, Phone, MessageCircle, Mail, Clock, HelpCircle, Shield, Users, Headphones, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { LogoVGreen } from '../components/ui/illustrations';
 
 const ForgotPassword: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handlePhoneCall = () => {
@@ -21,7 +24,7 @@ const ForgotPassword: React.FC = () => {
   };
 
   const handleLiveChat = () => {
-    alert('Đang kết nối với tổng đài...');
+    alert(t('auth.forgotAlertChat'));
   };
 
   return (
@@ -32,11 +35,11 @@ const ForgotPassword: React.FC = () => {
           <button
             onClick={() => navigate('/login')}
             className="p-2 hover:bg-muted rounded-full transition-colors"
-            aria-label="Quay lại"
+            aria-label={t('common.back')}
           >
             <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-base md:text-lg font-semibold text-foreground tracking-wide">HỖ TRỢ KHÁCH HÀNG</h1>
+          <h1 className="text-base md:text-lg font-semibold text-foreground tracking-wide">{t('auth.forgotTitle')}</h1>
           <div className="w-9 h-9" />
         </div>
       </div>
@@ -50,8 +53,8 @@ const ForgotPassword: React.FC = () => {
           <div className="w-16 h-16 bg-card/20 backdrop-blur-md rounded-full flex items-center justify-center mb-3 border border-white/30 animate-float">
             <Headphones className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-xl md:text-2xl font-bold text-white mb-2 tracking-tight">QUÊN MẬT KHẨU?</h2>
-          <p className="text-white/90 text-sm">Liên hệ CSKH để được hỗ trợ ngay lập tức</p>
+          <h2 className="text-xl md:text-2xl font-bold text-white mb-2 tracking-tight">{t('auth.forgotHeroTitle')}</h2>
+          <p className="text-white/90 text-sm">{t('auth.forgotHeroDesc')}</p>
         </div>
       </div>
 
@@ -64,13 +67,12 @@ const ForgotPassword: React.FC = () => {
               <div className="absolute inset-0 bg-success/40 rounded-full blur-xl animate-pulse-slow" />
               <div className="relative w-20 h-20 bg-gradient-to-br from-success to-brand-primary-700 rounded-full flex items-center justify-center shadow-glow">
                 <Shield className="w-10 h-10 text-white" />
-                {/* Lock open indicator */}
                 <Lock className="w-3 h-3 text-warning-strong absolute -bottom-1 -right-1 rotate-12" />
               </div>
             </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">BẢO MẬT TUYỆT ĐỐI</h3>
+            <h3 className="text-xl font-bold text-foreground mb-2">{t('auth.forgotSecurityTitle')}</h3>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Để đảm bảo an toàn tài khoản, việc khôi phục mật khẩu cần được xác thực qua đội ngũ bảo mật chuyên nghiệp của chúng tôi.
+              {t('auth.forgotSecurityDesc')}
             </p>
           </div>
 
@@ -80,19 +82,19 @@ const ForgotPassword: React.FC = () => {
                 <HelpCircle className="w-5 h-5 text-info" />
               </div>
               <div className="flex-1">
-                <h4 className="font-semibold text-info-strong mb-1">Quy trình khôi phục mật khẩu</h4>
+                <h4 className="font-semibold text-info-strong mb-1">{t('auth.forgotStepsTitle')}</h4>
                 <ul className="text-sm text-info-strong/80 space-y-1">
-                  <li>• Liên hệ CSKH qua hotline hoặc chat</li>
-                  <li>• Cung cấp thông tin định danh</li>
-                  <li>• Xác thực danh tính qua CMND/CCCD</li>
-                  <li>• Nhận mật khẩu mới qua SMS bảo mật</li>
+                  <li>• {t('auth.forgotSteps.0')}</li>
+                  <li>• {t('auth.forgotSteps.1')}</li>
+                  <li>• {t('auth.forgotSteps.2')}</li>
+                  <li>• {t('auth.forgotSteps.3')}</li>
                 </ul>
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h4 className="font-semibold text-foreground text-center mb-4">Chọn hình thức liên hệ</h4>
+            <h4 className="font-semibold text-foreground text-center mb-4">{t('auth.forgotChooseContact')}</h4>
 
             {/* Live Chat */}
             <button
@@ -104,11 +106,11 @@ const ForgotPassword: React.FC = () => {
                   <MessageCircle className="w-6 h-6" />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="font-semibold">Tư vấn viên online</p>
-                  <p className="text-white/80 text-xs">Phản hồi trong 2 phút</p>
+                  <p className="font-semibold">{t('auth.forgotLiveChatTitle')}</p>
+                  <p className="text-white/80 text-xs">{t('auth.forgotLiveChatDesc')}</p>
                 </div>
                 <div className="text-white/80">
-                  <span className="text-xs font-medium px-2 py-1 bg-card/20 rounded-full">Tiện lợi</span>
+                  <span className="text-xs font-medium px-2 py-1 bg-card/20 rounded-full">{t('auth.forgotLiveChatBadge')}</span>
                 </div>
               </div>
             </button>
@@ -123,11 +125,11 @@ const ForgotPassword: React.FC = () => {
                   <Mail className="w-6 h-6" />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="font-semibold">support@v-green.com</p>
-                  <p className="text-white/80 text-xs">Phản hồi trong 1 giờ</p>
+                  <p className="font-semibold">{t('auth.forgotEmailTitle')}</p>
+                  <p className="text-white/80 text-xs">{t('auth.forgotEmailDesc')}</p>
                 </div>
                 <div className="text-white/80">
-                  <span className="text-xs font-medium px-2 py-1 bg-card/20 rounded-full">Chi tiết</span>
+                  <span className="text-xs font-medium px-2 py-1 bg-card/20 rounded-full">{t('auth.forgotEmailBadge')}</span>
                 </div>
               </div>
             </button>
@@ -140,21 +142,21 @@ const ForgotPassword: React.FC = () => {
             <div className="w-8 h-8 bg-warning-subtle rounded-full flex items-center justify-center">
               <Clock className="w-5 h-5 text-warning-strong" />
             </div>
-            <h4 className="font-semibold text-foreground">Giờ làm việc CSKH</h4>
+            <h4 className="font-semibold text-foreground">{t('auth.forgotWorkingHours')}</h4>
           </div>
 
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Hotline 24/7:</span>
-              <span className="font-medium text-foreground">1900 123 456</span>
+              <span className="text-muted-foreground">{t('auth.forgotHotline')}</span>
+              <span className="font-medium text-foreground">{t('auth.forgotHotlineValue')}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Chat trực tuyến:</span>
-              <span className="font-medium text-foreground">6:00 - 22:00</span>
+              <span className="text-muted-foreground">{t('auth.forgotChatHours')}</span>
+              <span className="font-medium text-foreground">{t('auth.forgotChatHoursValue')}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Email hỗ trợ:</span>
-              <span className="font-medium text-foreground">24/7</span>
+              <span className="text-muted-foreground">{t('auth.forgotEmailHours')}</span>
+              <span className="font-medium text-foreground">{t('auth.forgotEmailHoursValue')}</span>
             </div>
           </div>
         </div>
@@ -165,7 +167,7 @@ const ForgotPassword: React.FC = () => {
             <div className="w-8 h-8 bg-info-subtle rounded-full flex items-center justify-center">
               <Users className="w-5 h-5 text-info" />
             </div>
-            <h4 className="font-semibold text-foreground">Đội ngũ hỗ trợ</h4>
+            <h4 className="font-semibold text-foreground">{t('auth.forgotTeamTitle')}</h4>
           </div>
 
           <div className="space-y-3">
@@ -174,8 +176,8 @@ const ForgotPassword: React.FC = () => {
                 <span className="text-primary-foreground font-medium text-sm">CS</span>
               </div>
               <div>
-                <p className="font-medium text-foreground">Chuyên viên CSKH</p>
-                <p className="text-sm text-muted-foreground">Hỗ trợ tổng quát và khôi phục mật khẩu</p>
+                <p className="font-medium text-foreground">{t('auth.forgotTeamCSName')}</p>
+                <p className="text-sm text-muted-foreground">{t('auth.forgotTeamCSDesc')}</p>
               </div>
             </div>
 
@@ -184,8 +186,8 @@ const ForgotPassword: React.FC = () => {
                 <span className="text-white font-medium text-sm">ST</span>
               </div>
               <div>
-                <p className="font-medium text-foreground">Chuyên viên bảo mật</p>
-                <p className="text-sm text-muted-foreground">Xác thực danh tính và bảo mật tài khoản</p>
+                <p className="font-medium text-foreground">{t('auth.forgotTeamSecurityName')}</p>
+                <p className="text-sm text-muted-foreground">{t('auth.forgotTeamSecurityDesc')}</p>
               </div>
             </div>
 
@@ -194,8 +196,8 @@ const ForgotPassword: React.FC = () => {
                 <span className="text-white font-medium text-sm">TC</span>
               </div>
               <div>
-                <p className="font-medium text-foreground">Chuyên viên kỹ thuật</p>
-                <p className="text-sm text-muted-foreground">Xử lý sự cố kỹ thuật và hệ thống</p>
+                <p className="font-medium text-foreground">{t('auth.forgotTeamTechName')}</p>
+                <p className="text-sm text-muted-foreground">{t('auth.forgotTeamTechDesc')}</p>
               </div>
             </div>
           </div>
@@ -203,22 +205,22 @@ const ForgotPassword: React.FC = () => {
 
         {/* FAQ */}
         <div className="mt-6 bg-card rounded-xl shadow-card border border-border p-4">
-          <h4 className="font-semibold text-foreground mb-3">Câu hỏi thường gặp</h4>
+          <h4 className="font-semibold text-foreground mb-3">{t('auth.forgotFaqTitle')}</h4>
 
           <div className="space-y-3">
             <div className="border-l-4 border-primary pl-4">
-              <h5 className="font-medium text-foreground mb-1">Tôi cần chuẩn bị gì khi liên hệ CSKH?</h5>
-              <p className="text-sm text-muted-foreground">Chuẩn bị CMND/CCCD, số điện thoại đăng ký và thông tin tài khoản cơ bản.</p>
+              <h5 className="font-medium text-foreground mb-1">{t('auth.forgotFaq1Q')}</h5>
+              <p className="text-sm text-muted-foreground">{t('auth.forgotFaq1A')}</p>
             </div>
 
             <div className="border-l-4 border-success pl-4">
-              <h5 className="font-medium text-foreground mb-1">Mất bao lâu để khôi phục mật khẩu?</h5>
-              <p className="text-sm text-muted-foreground">Thường chỉ mất 5-10 phút sau khi xác thực danh tính thành công.</p>
+              <h5 className="font-medium text-foreground mb-1">{t('auth.forgotFaq2Q')}</h5>
+              <p className="text-sm text-muted-foreground">{t('auth.forgotFaq2A')}</p>
             </div>
 
             <div className="border-l-4 border-info pl-4">
-              <h5 className="font-medium text-foreground mb-1">Có tốn phí gì không?</h5>
-              <p className="text-sm text-muted-foreground">Hoàn toàn miễn phí. Chúng tôi hỗ trợ khách hàng 24/7 không thu phí.</p>
+              <h5 className="font-medium text-foreground mb-1">{t('auth.forgotFaq3Q')}</h5>
+              <p className="text-sm text-muted-foreground">{t('auth.forgotFaq3A')}</p>
             </div>
           </div>
         </div>
@@ -229,10 +231,10 @@ const ForgotPassword: React.FC = () => {
             onClick={() => navigate('/login')}
             className="text-primary hover:text-primary/80 font-medium text-sm transition-colors"
           >
-            ← Quay lại đăng nhập
+            {t('auth.forgotBackToLogin')}
           </button>
           <div className="text-xs text-muted-foreground">
-            Được bảo trợ bởi
+            {t('auth.forgotPoweredBy')}
           </div>
           <LogoVGreen variant="full" />
         </div>

@@ -9,6 +9,7 @@ import {
   Wallet, BarChart3, History
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import BottomNavigation from '../components/BottomNavigation';
 import { useAuthStore } from '../stores/authStore';
@@ -17,6 +18,7 @@ import { useWalletStore } from '../stores/walletStore';
 import { formatCurrency } from '../lib/format';
 
 const Reinvestment: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuthStore();
@@ -53,18 +55,17 @@ const Reinvestment: React.FC = () => {
   const [step, setStep] = useState<'select' | 'package' | 'amount' | 'confirm' | 'success' | 'history'>('select');
   const [selectedInvestmentId, setSelectedInvestmentId] = useState<string | null>(null);
 
-  // Load investments on mount
   useEffect(() => {
     fetchInvestments();
     fetchHistory(1);
   }, []);
 
-  // Check for investmentId in URL params
   useEffect(() => {
     const invId = searchParams.get('investmentId');
     if (invId && investments.length > 0) {
       handleSelectInvestment(invId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, investments]);
 
   const handleSelectInvestment = async (investmentId: string) => {
@@ -97,7 +98,8 @@ const Reinvestment: React.FC = () => {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('vi-VN', {
+    const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
+    return new Date(dateStr).toLocaleDateString(locale, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -112,28 +114,34 @@ const Reinvestment: React.FC = () => {
   };
 
   const getPackageTypeLabel = (type: string) => {
-    switch (type) {
-      case 'VIC': return 'VIC';
-      case 'DC': return 'DC';
-      case 'GIFT_CARD': return 'Gift Card';
-      case 'REGULAR': return 'Thường';
-      default: return type;
-    }
+    const keyMap: Record<string, string> = {
+      VIC: 'reinvestment.pkgVIC',
+      DC: 'reinvestment.pkgDC',
+      GIFT_CARD: 'reinvestment.pkgGiftCard',
+      REGULAR: 'reinvestment.pkgRegular',
+    };
+    return keyMap[type] ? t(keyMap[type]) : type;
   };
 
   const getPackageTypeColor = (type: string) => {
     switch (type) {
-      case 'VIC': return 'bg-purple-100 text-purple-700';
+      case 'VIC': return 'bg-primary/10 text-primary';
       case 'DC': return 'bg-info-subtle text-info-strong';
-      case 'GIFT_CARD': return 'bg-pink-100 text-pink-700';
+      case 'GIFT_CARD': return 'bg-brand-energy-orange/20 text-brand-energy-orange';
       default: return 'bg-muted text-foreground';
     }
   };
 
-  // Reinvestable investments
   const reinvestableInvestments = investments.filter(
     (inv) => inv.status === 'active' || inv.status === 'completed'
   );
+
+  const stepLabels = [
+    t('reinvestment.stepSelect'),
+    t('reinvestment.stepPackage'),
+    t('reinvestment.stepAmount'),
+    t('reinvestment.stepConfirm'),
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -155,13 +163,14 @@ const Reinvestment: React.FC = () => {
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span>Tái đầu tư</span>
+            <span>{t('reinvestment.title')}</span>
           </button>
           <button
             onClick={() => {
               setStep(step === 'history' ? 'select' : 'history');
             }}
             className={`p-2 rounded-lg ${step === 'history' ? 'bg-success-subtle text-primary' : 'text-muted-foreground hover:text-primary'}`}
+            aria-label={t('reinvestment.history')}
           >
             {step === 'history' ? <ArrowLeft className="w-5 h-5" /> : <History className="w-5 h-5" />}
           </button>
@@ -170,7 +179,7 @@ const Reinvestment: React.FC = () => {
         {/* Step Indicator */}
         {step !== 'history' && step !== 'success' && (
           <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
-            {['Chọn đầu tư', 'Chọn gói', 'Số tiền', 'Xác nhận'].map((label, idx) => {
+            {stepLabels.map((label, idx) => {
               const stepNames = ['select', 'package', 'amount', 'confirm'];
               const currentIdx = stepNames.indexOf(step);
               const isActive = currentIdx === idx;
@@ -182,7 +191,7 @@ const Reinvestment: React.FC = () => {
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
                       isActive ? 'bg-primary text-white' :
                       isPast ? 'bg-primary text-white' :
-                      'bg-gray-200 text-muted-foreground'
+                      'bg-muted text-muted-foreground'
                     }`}>
                       {isPast ? <Check className="w-3 h-3" /> : idx + 1}
                     </div>
@@ -194,7 +203,7 @@ const Reinvestment: React.FC = () => {
                   </div>
                   {idx < 3 && (
                     <div className={`flex-1 h-0.5 min-w-[20px] ${
-                      isPast ? 'bg-primary' : 'bg-gray-200'
+                      isPast ? 'bg-primary' : 'bg-border'
                     }`} />
                   )}
                 </React.Fragment>
@@ -206,14 +215,13 @@ const Reinvestment: React.FC = () => {
         {/* History View */}
         {step === 'history' && (
           <div className="space-y-4">
-            {/* Stats */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-card rounded-xl p-4 shadow-card">
-                <p className="text-sm text-muted-foreground">Tổng lần</p>
+                <p className="text-sm text-muted-foreground">{t('reinvestment.totalRounds')}</p>
                 <p className="text-xl font-bold text-foreground">{historyStats.totalReinvestments}</p>
               </div>
               <div className="bg-card rounded-xl p-4 shadow-card">
-                <p className="text-sm text-muted-foreground">Tổng giá trị</p>
+                <p className="text-sm text-muted-foreground">{t('reinvestment.totalValue')}</p>
                 <p className="text-xl font-bold text-primary">
                   {formatCurrency(historyStats.totalAmount)}
                 </p>
@@ -222,28 +230,32 @@ const Reinvestment: React.FC = () => {
 
             <div className="bg-card rounded-xl p-4 shadow-card">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm text-muted-foreground">Lợi nhuận sử dụng</p>
+                <p className="text-sm text-muted-foreground">{t('reinvestment.profitUsed')}</p>
                 <p className="font-medium text-info">{formatCurrency(historyStats.totalProfitUsed)}</p>
               </div>
               <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Tiền mặt thêm</p>
+                <p className="text-sm text-muted-foreground">{t('reinvestment.extraCash')}</p>
                 <p className="font-medium text-warning-strong">{formatCurrency(historyStats.totalCashAdded)}</p>
               </div>
             </div>
 
-            {/* History List */}
             {historyLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
             ) : history.length === 0 ? (
               <div className="bg-card rounded-xl p-8 shadow-card text-center">
-                <RefreshCw className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                <p className="text-muted-foreground text-sm">Chưa có lịch sử tái đầu tư</p>
+                <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <RefreshCw className="h-7 w-7" />
+                </div>
+                <p className="font-medium text-foreground">{t('reinvestment.noHistory')}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('reinvestment.noHistoryHint')}
+                </p>
               </div>
             ) : (
               <div className="bg-card rounded-xl shadow-card overflow-hidden">
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-border">
                   {history.map((item) => (
                     <div key={item.id} className="p-4">
                       <div className="flex items-center justify-between mb-2">
@@ -260,30 +272,29 @@ const Reinvestment: React.FC = () => {
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>Ngày: {formatDate(item.created_at)}</span>
-                        <span>Sinh lời: {formatCurrency(item.profit_used)} | Thêm: {formatCurrency(item.cash_added)}</span>
+                        <span>{t('reinvestment.dateLabel', { date: formatDate(item.created_at) })}</span>
+                        <span>{t('reinvestment.profitSplit', { profit: formatCurrency(item.profit_used), cash: formatCurrency(item.cash_added) })}</span>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {/* Pagination */}
                 {historyTotal > 10 && (
                   <div className="p-4 border-t border-border flex items-center justify-center gap-2">
                     <button
                       onClick={() => fetchHistory(historyPage - 1)}
                       disabled={historyPage <= 1}
-                      className="px-3 py-1 border rounded text-sm disabled:opacity-40"
+                      className="px-3 py-1 border border-border rounded text-sm disabled:opacity-40"
                     >
                       ←
                     </button>
                     <span className="text-sm text-muted-foreground">
-                      Trang {historyPage} / {Math.ceil(historyTotal / 10)}
+                      {t('reinvestment.pageInfo', { page: historyPage, total: Math.ceil(historyTotal / 10) })}
                     </span>
                     <button
                       onClick={() => fetchHistory(historyPage + 1)}
                       disabled={historyPage >= Math.ceil(historyTotal / 10)}
-                      className="px-3 py-1 border rounded text-sm disabled:opacity-40"
+                      className="px-3 py-1 border border-border rounded text-sm disabled:opacity-40"
                     >
                       →
                     </button>
@@ -301,17 +312,15 @@ const Reinvestment: React.FC = () => {
               <div className="w-16 h-16 bg-success-subtle rounded-full flex items-center justify-center mx-auto mb-4">
                 <Check className="w-8 h-8 text-primary" />
               </div>
-              <h2 className="text-xl font-bold text-foreground mb-2">Tái đầu tư thành công!</h2>
+              <h2 className="text-xl font-bold text-foreground mb-2">{t('reinvestment.successTitle')}</h2>
               <p className="text-muted-foreground text-sm mb-6">
-                Đầu tư mới của bạn đã được tạo thành công.
-                <br />
-                Lợi nhuận sẽ được cộng hàng ngày vào tài khoản.
+                {t('reinvestment.successDesc')}
               </p>
               <button
                 onClick={handleDone}
                 className="w-full py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary transition-colors"
               >
-                Xem danh sách đầu tư
+                {t('reinvestment.viewInvestments')}
               </button>
             </div>
           </div>
@@ -324,8 +333,8 @@ const Reinvestment: React.FC = () => {
               <div className="flex items-center gap-3 mb-2">
                 <RefreshCw className="w-8 h-8" />
                 <div>
-                  <h2 className="text-lg font-bold">Tái đầu tư thông minh</h2>
-                  <p className="text-sm text-primary-foreground">Sử dụng lợi nhuận để tái đầu tư</p>
+                  <h2 className="text-lg font-bold">{t('reinvestment.smartTitle')}</h2>
+                  <p className="text-sm text-primary-foreground">{t('reinvestment.smartSubtitle')}</p>
                 </div>
               </div>
             </div>
@@ -336,10 +345,12 @@ const Reinvestment: React.FC = () => {
               </div>
             ) : reinvestableInvestments.length === 0 ? (
               <div className="bg-card rounded-xl p-8 shadow-card text-center">
-                <Package className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                <p className="text-muted-foreground text-sm">Chưa có đầu tư nào có thể tái đầu tư</p>
-                <p className="text-muted-foreground text-xs mt-1">
-                  Hãy đầu tư trước để có thể tái đầu tư sau
+                <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-info-subtle text-info">
+                  <Package className="h-7 w-7" />
+                </div>
+                <p className="font-medium text-foreground">{t('reinvestment.noReinvestable')}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('reinvestment.noReinvestableHint')}
                 </p>
               </div>
             ) : (
@@ -366,11 +377,11 @@ const Reinvestment: React.FC = () => {
 
                       <div className="grid grid-cols-2 gap-3 mb-3">
                         <div>
-                          <p className="text-xs text-muted-foreground">Giá trị</p>
+                          <p className="text-xs text-muted-foreground">{t('reinvestment.value')}</p>
                           <p className="font-bold text-foreground">{formatCurrency(inv.amount)}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Lợi nhuận khả dụng</p>
+                          <p className="text-xs text-muted-foreground">{t('reinvestment.availableProfit')}</p>
                           <p className="font-bold text-primary">{formatCurrency(inv.availableProfit)}</p>
                         </div>
                       </div>
@@ -379,16 +390,14 @@ const Reinvestment: React.FC = () => {
                         <div className="flex items-center gap-1.5">
                           <Clock className="w-4 h-4 text-muted-foreground" />
                           <span className="text-sm text-muted-foreground">
-                            {inv.status === 'completed' ? (
-                              'Đã kết thúc'
-                            ) : (
-                              `Còn ${daysRemaining} ngày`
-                            )}
+                            {inv.status === 'completed'
+                              ? t('reinvestment.statusCompleted')
+                              : t('reinvestment.daysRemaining', { count: daysRemaining })}
                           </span>
                         </div>
                         {isNearMaturity && (
                           <span className="px-2 py-0.5 bg-warning-subtle text-warning-strong rounded text-xs font-medium">
-                            Sắp đáo hạn
+                            {t('reinvestment.nearMaturity')}
                           </span>
                         )}
                       </div>
@@ -403,20 +412,19 @@ const Reinvestment: React.FC = () => {
         {/* Select Package Step */}
         {step === 'package' && (
           <div className="space-y-4">
-            {/* Selected Investment Summary */}
             <div className="bg-card rounded-xl p-4 shadow-card">
-              <p className="text-sm text-muted-foreground mb-1">Đầu tư gốc</p>
+              <p className="text-sm text-muted-foreground mb-1">{t('reinvestment.originalInvestment')}</p>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-semibold text-foreground">
                     {selectedInvestment?.package_name || 'N/A'}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Giá trị: {formatCurrency(selectedInvestment?.amount || 0)}
+                    {t('reinvestment.valueLabel', { amount: formatCurrency(selectedInvestment?.amount || 0) })}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Lợi nhuận</p>
+                  <p className="text-sm text-muted-foreground">{t('reinvestment.profit')}</p>
                   <p className="font-bold text-primary">
                     {formatCurrency(selectedInvestment?.accumulated_profit || 0)}
                   </p>
@@ -424,7 +432,7 @@ const Reinvestment: React.FC = () => {
               </div>
             </div>
 
-            <h3 className="font-semibold text-foreground">Chọn gói đầu tư mới</h3>
+            <h3 className="font-semibold text-foreground">{t('reinvestment.chooseNewPackage')}</h3>
 
             <div className="space-y-3">
               {availablePackages.map((pkg) => (
@@ -445,15 +453,15 @@ const Reinvestment: React.FC = () => {
 
                   <div className="grid grid-cols-3 gap-2 text-sm">
                     <div>
-                      <p className="text-muted-foreground">Lợi nhuận/ngày</p>
+                      <p className="text-muted-foreground">{t('reinvestment.dailyProfitPct')}</p>
                       <p className="font-bold text-primary">{pkg.daily_profit}%</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Kỳ hạn</p>
-                      <p className="font-medium">{pkg.investment_period} ngày</p>
+                      <p className="text-muted-foreground">{t('reinvestment.term')}</p>
+                      <p className="font-medium">{t('reinvestment.days', { count: pkg.investment_period })}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">Tối thiểu</p>
+                      <p className="text-muted-foreground">{t('reinvestment.minInvestment')}</p>
                       <p className="font-medium">{formatCurrency(pkg.min_investment || 0)}</p>
                     </div>
                   </div>
@@ -466,7 +474,6 @@ const Reinvestment: React.FC = () => {
         {/* Amount Step */}
         {step === 'amount' && (
           <div className="space-y-4">
-            {/* Package Info */}
             <div className="bg-card rounded-xl p-4 shadow-card">
               <div className="flex items-center gap-2 mb-2">
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${getPackageTypeColor(selectedPackage?.type || '')}`}>
@@ -476,31 +483,28 @@ const Reinvestment: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
-                  <p className="text-muted-foreground">Lợi nhuận/ngày</p>
+                  <p className="text-muted-foreground">{t('reinvestment.dailyProfitPct')}</p>
                   <p className="font-bold text-primary">{selectedPackage?.daily_profit}%</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Kỳ hạn</p>
-                  <p className="font-medium">{selectedPackage?.investment_period} ngày</p>
+                  <p className="text-muted-foreground">{t('reinvestment.term')}</p>
+                  <p className="font-medium">{t('reinvestment.days', { count: selectedPackage?.investment_period })}</p>
                 </div>
               </div>
             </div>
 
-            {/* Available Profit */}
             <div className="bg-info-subtle rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <DollarSign className="w-5 h-5 text-info" />
-                <span className="text-sm text-info font-medium">Lợi nhuận khả dụng</span>
+                <span className="text-sm text-info font-medium">{t('reinvestment.availableProfit')}</span>
               </div>
               <p className="text-2xl font-bold text-info-strong">{formatCurrency(availableProfit)}</p>
             </div>
 
-            {/* Form */}
             <div className="bg-card rounded-xl p-4 shadow-card space-y-4">
-              {/* Profit to use */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Sử dụng lợi nhuận
+                  {t('reinvestment.profitToUse')}
                 </label>
                 <div className="relative">
                   <input
@@ -512,20 +516,19 @@ const Reinvestment: React.FC = () => {
                   />
                   <button
                     onClick={() => setProfitToUse(availableProfit)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-success-subtle text-primary rounded text-xs font-medium hover:bg-green-200"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded bg-success-subtle px-2 py-1 text-xs font-medium text-success-strong hover:bg-success/30"
                   >
-                    Tất cả
+                    {t('reinvestment.all')}
                   </button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Tối đa: {formatCurrency(availableProfit)}
+                  {t('reinvestment.maximum', { amount: formatCurrency(availableProfit) })}
                 </p>
               </div>
 
-              {/* Cash to add */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Thêm tiền từ ví
+                  {t('reinvestment.cashFromWallet')}
                 </label>
                 <div className="relative">
                   <input
@@ -537,20 +540,19 @@ const Reinvestment: React.FC = () => {
                   />
                   <button
                     onClick={() => setCashToAdd(Math.min(balance, availableProfit * 2))}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 bg-warning-subtle text-orange-700 rounded text-xs font-medium hover:bg-orange-200"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded bg-warning-subtle px-2 py-1 text-xs font-medium text-warning-strong hover:bg-warning/30"
                   >
-                    Tối đa
+                    {t('reinvestment.max')}
                   </button>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Số dư ví: {formatCurrency(balance)}
+                  {t('reinvestment.walletBalance', { amount: formatCurrency(balance) })}
                 </p>
               </div>
 
-              {/* Summary */}
               <div className="bg-background rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-muted-foreground">Tổng đầu tư mới</span>
+                  <span className="text-muted-foreground">{t('reinvestment.totalNewInvestment')}</span>
                   <span className="text-xl font-bold text-foreground">
                     {formatCurrency(profitToUse + cashToAdd)}
                   </span>
@@ -558,7 +560,7 @@ const Reinvestment: React.FC = () => {
                 {selectedPackage?.min_investment && (profitToUse + cashToAdd) < selectedPackage.min_investment && (
                   <div className="flex items-center gap-1 text-warning-strong text-sm">
                     <AlertCircle className="w-4 h-4" />
-                    Tối thiểu: {formatCurrency(selectedPackage.min_investment)}
+                    {t('reinvestment.minAmount', { amount: formatCurrency(selectedPackage.min_investment) })}
                   </div>
                 )}
               </div>
@@ -571,7 +573,7 @@ const Reinvestment: React.FC = () => {
                 }
                 className="w-full py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Tiếp tục
+                {t('common.continue')}
               </button>
             </div>
           </div>
@@ -580,52 +582,51 @@ const Reinvestment: React.FC = () => {
         {/* Confirm Step */}
         {step === 'confirm' && preview && (
           <div className="space-y-4">
-            {/* Preview Summary */}
             <div className="bg-card rounded-xl p-4 shadow-card">
-              <h3 className="font-semibold text-foreground mb-4">Xác nhận tái đầu tư</h3>
+              <h3 className="font-semibold text-foreground mb-4">{t('reinvestment.confirmTitle')}</h3>
 
               <div className="space-y-3">
                 <div className="flex items-center justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Gói đầu tư</span>
+                  <span className="text-muted-foreground">{t('reinvestment.packageLabel')}</span>
                   <span className="font-medium text-foreground">{preview.newInvestment.packageName}</span>
                 </div>
 
                 <div className="flex items-center justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Lợi nhuận sử dụng</span>
+                  <span className="text-muted-foreground">{t('reinvestment.profitUsed')}</span>
                   <span className="font-medium text-info">-{formatCurrency(preview.newInvestment.profitUsed)}</span>
                 </div>
 
                 <div className="flex items-center justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Tiền thêm từ ví</span>
+                  <span className="text-muted-foreground">{t('reinvestment.cashFromWallet')}</span>
                   <span className="font-medium text-warning-strong">-{formatCurrency(preview.newInvestment.cashAdded)}</span>
                 </div>
 
                 <div className="flex items-center justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Tổng đầu tư mới</span>
+                  <span className="text-muted-foreground">{t('reinvestment.totalNewInvestment')}</span>
                   <span className="font-bold text-primary text-lg">
                     {formatCurrency(preview.newInvestment.totalAmount)}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Lợi nhuận/ngày</span>
+                  <span className="text-muted-foreground">{t('reinvestment.dailyProfitAmount')}</span>
                   <span className="font-medium text-primary">
                     {formatCurrency(parseFloat(preview.newInvestment.dailyProfit))}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Kỳ hạn</span>
-                  <span className="font-medium">{preview.newInvestment.investmentPeriod} ngày</span>
+                  <span className="text-muted-foreground">{t('reinvestment.term')}</span>
+                  <span className="font-medium">{t('reinvestment.days', { count: preview.newInvestment.investmentPeriod })}</span>
                 </div>
 
                 <div className="flex items-center justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Ngày kết thúc</span>
+                  <span className="text-muted-foreground">{t('reinvestment.endDate')}</span>
                   <span className="font-medium">{formatDate(preview.newInvestment.endDate)}</span>
                 </div>
 
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-muted-foreground">Tổng lợi nhuận dự kiến</span>
+                  <span className="text-muted-foreground">{t('reinvestment.expectedProfit')}</span>
                   <span className="font-bold text-foreground">
                     {formatCurrency(parseFloat(preview.newInvestment.totalProfit))}
                   </span>
@@ -633,13 +634,12 @@ const Reinvestment: React.FC = () => {
               </div>
             </div>
 
-            {/* Warning */}
-            <div className="bg-warning-subtle border border-yellow-200 rounded-xl p-4">
+            <div className="bg-warning-subtle border border-warning/20 rounded-xl p-4">
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-5 h-5 text-warning-strong flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-yellow-800">
-                  <p className="font-medium">Lưu ý:</p>
-                  <p>Khi tái đầu tư, đầu tư cũ sẽ được đánh dấu là đã kết thúc và không còn sinh lời.</p>
+                <div className="text-sm text-warning-strong">
+                  <p className="font-medium">{t('reinvestment.warningTitle')}</p>
+                  <p>{t('reinvestment.warningDesc')}</p>
                 </div>
               </div>
             </div>
@@ -650,13 +650,12 @@ const Reinvestment: React.FC = () => {
               </div>
             )}
 
-            {/* Actions */}
             <div className="flex gap-3">
               <button
                 onClick={() => setStep('amount')}
                 className="flex-1 py-3 border border-input text-foreground rounded-xl font-medium hover:bg-background transition-colors"
               >
-                Quay lại
+                {t('common.back')}
               </button>
               <button
                 onClick={handleExecute}
@@ -666,12 +665,12 @@ const Reinvestment: React.FC = () => {
                 {executeLoading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Đang xử lý...
+                    {t('common.processing')}
                   </>
                 ) : (
                   <>
                     <Check className="w-5 h-5" />
-                    Xác nhận
+                    {t('reinvestment.confirm')}
                   </>
                 )}
               </button>
