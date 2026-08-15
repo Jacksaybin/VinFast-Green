@@ -1,11 +1,13 @@
 /**
  * Trang chủ - Landing page với thông tin tổng quan và các gói đầu tư nổi bật
  * Đã tinh chỉnh: Hero gradient mesh + SVG illustration, FeatureIcon thay emoji, design token toàn bộ.
+ * Hỗ trợ i18n: toàn bộ chuỗi hiển thị dịch qua react-i18next.
  */
 
 import React, { useEffect } from 'react';
-import { ArrowRight, Users, Zap, TrendingUp, Star, ShieldCheck, Wallet, Clock, HeadphonesIcon } from 'lucide-react';
+import { ArrowRight, Users, Zap, TrendingUp, Star, ShieldCheck, Wallet, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import BottomNavigation from '../components/BottomNavigation';
 import InvestmentCard from '../components/InvestmentCard';
@@ -15,6 +17,7 @@ import { useAuthStore } from '../stores/authStore';
 import { usePackageStore } from '../stores/packageStore';
 
 const Home: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
   const packages = usePackageStore((s) => s.packages);
@@ -29,34 +32,34 @@ const Home: React.FC = () => {
     .slice(0, 3);
 
   const stats = [
-    { label: 'Tổng người dùng', value: '50,000+', icon: <Users className="w-5 h-5" />, color: 'primary' },
-    { label: 'Trạm sạc VinFast', value: '1,000+', icon: <Zap className="w-5 h-5" />, color: 'accent' },
-    { label: 'Quỹ đầu tư', value: '2.5 tỷ $', icon: <TrendingUp className="w-5 h-5" />, color: 'success' },
-    { label: 'Đánh giá', value: '4.9/5.0', icon: <Star className="w-5 h-5" />, color: 'warning' },
+    { label: t('home.statsUsers'), value: t('home.statsUsersValue'), icon: <Users className="w-5 h-5" />, color: 'primary' },
+    { label: t('home.statsStations'), value: t('home.statsStationsValue'), icon: <Zap className="w-5 h-5" />, color: 'accent' },
+    { label: t('home.statsFund'), value: t('home.statsFundValue'), icon: <TrendingUp className="w-5 h-5" />, color: 'success' },
+    { label: t('home.statsRating'), value: t('home.statsRatingValue'), icon: <Star className="w-5 h-5" />, color: 'warning' },
   ];
 
   const benefits = [
     {
-      title: 'Lợi nhuận cao',
-      desc: 'Lên đến 2.2%/ngày',
+      title: t('home.benefits.investment.title'),
+      desc: t('home.benefits.investment.desc'),
       icon: 'Investment' as const,
       gradient: 'from-success to-brand-primary-500',
     },
     {
-      title: 'An toàn tuyệt đối',
-      desc: 'Bảo hiểm 100% vốn',
+      title: t('home.benefits.safety.title'),
+      desc: t('home.benefits.safety.desc'),
       icon: 'Safety' as const,
       gradient: 'from-info to-brand-accent-500',
     },
     {
-      title: 'Rút tiền linh hoạt',
-      desc: 'Nhanh chóng trong 24h',
+      title: t('home.benefits.wallet.title'),
+      desc: t('home.benefits.wallet.desc'),
       icon: 'Wallet' as const,
       gradient: 'from-warning to-brand-energy-orange',
     },
     {
-      title: 'Hỗ trợ 24/7',
-      desc: 'Đội ngũ chuyên nghiệp',
+      title: t('home.benefits.support.title'),
+      desc: t('home.benefits.support.desc'),
       icon: 'Support' as const,
       gradient: 'from-brand-primary-500 to-brand-accent-500',
     },
@@ -91,25 +94,25 @@ const Home: React.FC = () => {
           {/* Left content */}
           <div className="max-w-xl animate-slide-up">
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full text-sm mb-5 border border-white/20">
-              <Zap className="w-4 h-4 text-yellow-300" />
-              <span>Quỹ đầu tư trạm sạc VinFast chính thức</span>
+              <Zap className="w-4 h-4 text-warning-strong" />
+              <span>{t('home.badge')}</span>
             </div>
             <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-4 tracking-tight">
-              Đầu tư tương lai xanh,
+              {t('home.titleStart')}
               <br />
-              <span className="bg-gradient-to-r from-yellow-200 via-brand-primary-200 to-cyan-200 bg-clip-text text-transparent">
-                Sinh lời bền vững
+              <span className="bg-gradient-to-r from-brand-energy-yellow via-brand-primary-200 to-brand-accent-200 bg-clip-text text-transparent">
+                {t('home.titleEnd')}
               </span>
             </h1>
             <p className="text-white/90 text-base md:text-lg mb-8 max-w-lg leading-relaxed">
-              Tham gia cùng hàng nghìn nhà đầu tư thông minh, góp phần phát triển hệ thống trạm sạc xe điện VinFast toàn cầu.
+              {t('home.subtitle')}
             </p>
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={() => navigate('/investment')}
                 className="group bg-white text-brand-primary-700 px-6 py-3 rounded-xl font-semibold hover:bg-white/95 transition-all flex items-center gap-2 shadow-elevated hover:shadow-glow-lg"
               >
-                Khám phá gói đầu tư
+                {t('home.ctaExplore')}
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
               {!isAuthenticated && (
@@ -117,7 +120,7 @@ const Home: React.FC = () => {
                   onClick={() => navigate('/register')}
                   className="bg-white/10 backdrop-blur-md text-white px-6 py-3 rounded-xl font-semibold hover:bg-white/20 transition-colors border border-white/20"
                 >
-                  Đăng ký miễn phí
+                  {t('home.ctaRegister')}
                 </button>
               )}
             </div>
@@ -126,11 +129,11 @@ const Home: React.FC = () => {
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-white/80">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-brand-primary-200" />
-                <span>Đã xác minh bởi V-GREEN</span>
+                <span>{t('home.trustVerified')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-brand-primary-200" />
-                <span>Rút tiền trong 24h</span>
+                <span>{t('home.trustWithdraw')}</span>
               </div>
             </div>
           </div>
@@ -163,24 +166,24 @@ const Home: React.FC = () => {
         <div className="max-w-6xl mx-auto mb-10">
           <div className="text-center mb-6">
             <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-2">
-              Tại sao chọn <span className="text-gradient-primary">V-GREEN</span>?
+              {t('home.benefitsTitle')} <span className="text-gradient-primary">{t('home.benefitsTitleAccent')}</span>{t('home.benefitsTitleSuffix')}
             </h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Nền tảng đầu tư minh bạch, an toàn và sinh lời hàng đầu Việt Nam
+              {t('home.benefitsSubtitle')}
             </p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {benefits.map((b, i) => (
               <div
                 key={i}
-                className="bg-card rounded-2xl shadow-card border border-border p-4 card-hover relative overflow-hidden group"
+                className="bg-card rounded-2xl shadow-card border border-border p-4 card-hover relative overflow-hidden group min-h-[148px] flex flex-col"
               >
                 {/* Decorative gradient corner */}
                 <div className={`absolute -top-12 -right-12 w-24 h-24 rounded-full bg-gradient-to-br ${b.gradient} opacity-10 group-hover:opacity-20 transition-opacity`} />
                 <div className={`relative w-12 h-12 rounded-xl bg-gradient-to-br ${b.gradient} flex items-center justify-center mb-3 shadow-glow`}>
                   <FeatureIcon name={b.icon} size={24} className="text-white" />
                 </div>
-                <h3 className="font-semibold text-foreground text-sm mb-1">{b.title}</h3>
+                <h3 className="mb-1.5 text-base font-semibold leading-tight text-foreground">{b.title}</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">{b.desc}</p>
               </div>
             ))}
@@ -191,14 +194,14 @@ const Home: React.FC = () => {
         <div className="max-w-6xl mx-auto mb-10">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-2xl md:text-3xl font-extrabold text-foreground">Gói đầu tư nổi bật</h2>
-              <p className="text-sm text-muted-foreground mt-1">Lựa chọn tốt nhất cho nhà đầu tư</p>
+              <h2 className="text-2xl md:text-3xl font-extrabold text-foreground">{t('home.featuredTitle')}</h2>
+              <p className="text-sm text-muted-foreground mt-1">{t('home.featuredSubtitle')}</p>
             </div>
             <button
               onClick={() => navigate('/investment')}
               className="text-primary text-sm font-medium hover:underline flex items-center gap-1"
             >
-              Xem tất cả <ArrowRight className="w-4 h-4" />
+              {t('common.viewAll')} <ArrowRight className="w-4 h-4" />
             </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -216,7 +219,7 @@ const Home: React.FC = () => {
                     amount: pkg.investmentAmount,
                     duration: `${pkg.investmentPeriod} ngày`,
                     progress: Math.min(100, pkg.progress),
-                    status: 'Đang hoạt động',
+                    status: pkg.status === 'completed' ? 'completed' : pkg.status === 'paused' ? 'upcoming' : 'active',
                   }}
                 />
               </div>
@@ -231,19 +234,19 @@ const Home: React.FC = () => {
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium mb-3">
                 <TrendingUp className="w-3 h-3" />
-                <span>Hiệu suất thực tế</span>
+                <span>{t('home.dashboardBadge')}</span>
               </div>
               <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-3">
-                Theo dõi lợi nhuận minh bạch,<br /> rút tiền linh hoạt
+                {t('home.dashboardTitle')}<br />{t('home.dashboardTitleBreak')}
               </h2>
               <p className="text-muted-foreground mb-6 leading-relaxed">
-                Dashboard trực quan giúp bạn nắm bắt mọi biến động của khoản đầu tư, cập nhật theo thời gian thực.
+                {t('home.dashboardDesc')}
               </p>
               <button
                 onClick={() => navigate('/login')}
                 className="bg-gradient-primary text-primary-foreground px-5 py-2.5 rounded-xl font-semibold hover:shadow-glow transition-all flex items-center gap-2"
               >
-                Trải nghiệm ngay
+                {t('home.dashboardCta')}
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -266,14 +269,14 @@ const Home: React.FC = () => {
 
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-1.5 rounded-full text-xs mb-4 border border-white/20">
-                <Zap className="w-3 h-3 text-yellow-300" />
-                <span>500,000+ nhà đầu tư đã tham gia</span>
+                <Zap className="w-3 h-3 text-warning-strong" />
+                <span>{t('home.ctaBannerBadge')}</span>
               </div>
               <h2 className="text-2xl md:text-4xl font-extrabold mb-3">
-                Bắt đầu đầu tư ngay hôm nay
+                {t('home.ctaBannerTitle')}
               </h2>
               <p className="text-white/90 text-sm md:text-base mb-6 max-w-md mx-auto">
-                Đăng ký tài khoản miễn phí và nhận thưởng đặt lịch lên đến hàng tỷ đồng
+                {t('home.ctaBannerDesc')}
               </p>
               {!isAuthenticated ? (
                 <div className="flex flex-wrap justify-center gap-3">
@@ -281,13 +284,13 @@ const Home: React.FC = () => {
                     onClick={() => navigate('/register')}
                     className="bg-white text-brand-primary-700 px-6 py-3 rounded-xl font-semibold hover:bg-white/95 transition-all shadow-elevated"
                   >
-                    Đăng ký ngay
+                    {t('home.ctaRegisterNow')}
                   </button>
                   <button
                     onClick={() => navigate('/login')}
                     className="bg-white/10 backdrop-blur-md text-white px-6 py-3 rounded-xl font-semibold hover:bg-white/20 transition-colors border border-white/20"
                   >
-                    Đăng nhập
+                    {t('home.ctaLogin')}
                   </button>
                 </div>
               ) : (
@@ -295,7 +298,7 @@ const Home: React.FC = () => {
                   onClick={() => navigate('/investment')}
                   className="bg-white text-brand-primary-700 px-6 py-3 rounded-xl font-semibold hover:bg-white/95 transition-all flex items-center gap-2 mx-auto"
                 >
-                  Đầu tư ngay <ArrowRight className="w-5 h-5" />
+                  {t('home.ctaInvestNow')} <ArrowRight className="w-5 h-5" />
                 </button>
               )}
             </div>
