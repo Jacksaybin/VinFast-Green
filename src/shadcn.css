@@ -255,6 +255,18 @@ html > body * {
 .bg-gradient-card {
   background-image: var(--gradient-card);
 }
+.bg-gradient-success {
+  background-image: linear-gradient(135deg, hsl(var(--success)) 0%, hsl(var(--success-strong)) 100%);
+}
+.bg-gradient-warning {
+  background-image: linear-gradient(135deg, hsl(var(--warning)) 0%, hsl(var(--warning-strong)) 100%);
+}
+.bg-gradient-danger {
+  background-image: linear-gradient(135deg, hsl(var(--danger)) 0%, hsl(var(--danger-strong)) 100%);
+}
+.bg-gradient-info {
+  background-image: linear-gradient(135deg, hsl(var(--info)) 0%, hsl(var(--info-strong)) 100%);
+}
 .bg-mesh-green {
   background-image: var(--gradient-mesh);
   background-size: 200% 200%;
