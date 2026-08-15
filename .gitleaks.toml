@@ -1,0 +1,77 @@
+# Gitleaks config — phát hiện secret trước khi commit
+# Docs: https://github.com/gitleaks/gitleaks
+# Cài đặt: brew install gitleaks / scoop install gitleaks / https://github.com/gitleaks/gitleaks/releases
+
+title = "V-GREEN Platform — Secret Detection"
+
+[extend]
+# Dùng default rules + custom rules bên dưới
+useDefault = true
+
+# Files/paths to ignore entirely
+[allowlist]
+paths = [
+  '''node_modules/''',
+  '''dist/''',
+  '''build/''',
+  '''\.git/''',
+  '''coverage/''',
+  '''\.next/''',
+  '''\.cache/''',
+  '''package-lock\.json''',
+  '''yarn\.lock''',
+  '''pnpm-lock\.yaml''',
+  # Các file example — KHÔNG có secret thật
+  '''\.env\.example$''',
+  '''\.env\.sample$''',
+  '''server/\.env\.example$''',
+  # Tài liệu có thể chứa pattern giống secret
+  '''SECURITY\.md$''',
+  '''README\.md$''',
+  # Build artifacts
+  '''public/.*''',
+]
+
+# Custom rules cho V-GREEN stack
+[[rules]]
+id = "vinfast-jwt-secret"
+description = "V-GREEN JWT secret hardcoded"
+regex = '''(JWT_SECRET|JWT_REFRESH_SECRET)[\s]*=[\s]*["'][a-zA-Z0-9_/+=-]{16,}["']'''
+tags = ["secret", "jwt"]
+
+[[rules]]
+id = "vinfast-database-url"
+description = "PostgreSQL connection string with credentials"
+regex = '''postgres(ql)?://[^:]+:[^@]+@[^\s"']+'''
+tags = ["secret", "database"]
+
+[[rules]]
+id = "vinfast-vinfast-tokens"
+description = "V-GREEN / VinFast API tokens"
+regex = '''(?i)(vgreen|vinfast)[_-]?(api[_-]?key|token|secret)[\s]*[:=][\s]*["']?[a-zA-Z0-9_\-]{20,}'''
+tags = ["secret", "api"]
+
+[[rules]]
+id = "vinfast-neon-password"
+description = "Neon DB password in env files"
+regex = '''NEON.*PASSWORD[\s]*=[\s]*["'][^"']+["']'''
+tags = ["secret", "database"]
+
+[[rules]]
+id = "vinfast-bcrypt-hash"
+description = "Bcrypt hash leaked (likely seeded admin)"
+regex = '''\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}'''
+tags = ["secret", "hash"]
+
+[[rules]]
+id = "vinfast-private-key"
+description = "PEM private key"
+regex = '''-----BEGIN (RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY( BLOCK)?-----'''
+tags = ["secret", "key"]
+
+# Reduce false positives
+[allowlist.regexes]
+# Hex strings ngắn (build artifacts, hashes) — không phải secret
+'''^[a-f0-9]{32}$''' = ["package-lock.json"]
+# Common mock/test phone numbers
+'''\+84(0|1)\d{9}''' = ["**/seed.ts", "**/*.test.ts", "**/test/**"]

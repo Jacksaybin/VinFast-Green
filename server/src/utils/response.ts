@@ -55,3 +55,16 @@ export function paginated<T>(
     },
   });
 }
+
+/**
+ * Legacy helpers — match call style used by older routes
+ * (referrals, reinvestments) that pass data straight into res.json().
+ * Returns the envelope object so callers can do `res.json(success({...}))`.
+ */
+export function success<T = unknown>(data: T) {
+  return { success: true, message: 'Success', data };
+}
+
+export function error(message: string) {
+  return { success: false, error: message };
+}

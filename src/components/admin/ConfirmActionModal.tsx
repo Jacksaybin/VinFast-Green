@@ -42,20 +42,20 @@ const VARIANT_CONFIG: Record<
     defaultTitle: 'Xác nhận duyệt giao dịch',
     actionLabel: 'Xác nhận duyệt',
     icon: Check,
-    color: 'text-green-600',
-    btnColor: 'bg-green-600',
-    btnHover: 'hover:bg-green-700',
-    accentBg: 'bg-green-50',
+    color: 'text-primary',
+    btnColor: 'bg-primary',
+    btnHover: 'hover:bg-primary',
+    accentBg: 'bg-success-subtle',
   },
   reject: {
     label: 'từ chối',
     defaultTitle: 'Xác nhận từ chối giao dịch',
     actionLabel: 'Xác nhận từ chối',
     icon: Ban,
-    color: 'text-red-600',
-    btnColor: 'bg-red-600',
-    btnHover: 'hover:bg-red-700',
-    accentBg: 'bg-red-50',
+    color: 'text-danger',
+    btnColor: 'bg-danger',
+    btnHover: 'hover:bg-danger-strong',
+    accentBg: 'bg-danger-subtle',
   },
 };
 
@@ -153,19 +153,19 @@ export const ConfirmActionModal: React.FC<ConfirmActionModalProps> = ({
         if (e.target === e.currentTarget && !submitting && !loading) onClose();
       }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+      <div className="bg-card rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
         {/* Header */}
         <div className={`flex items-center justify-between px-5 py-4 ${config.accentBg} border-b`}>
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full bg-white flex items-center justify-center ${config.color}`}>
+            <div className={`w-10 h-10 rounded-full bg-card flex items-center justify-center ${config.color}`}>
               <Icon className="w-5 h-5" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900">{title || config.defaultTitle}</h3>
+            <h3 className="text-lg font-bold text-foreground">{title || config.defaultTitle}</h3>
           </div>
           <button
             onClick={onClose}
             disabled={submitting || loading}
-            className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30"
+            className="p-1 text-muted-foreground hover:text-muted-foreground disabled:opacity-30"
             aria-label="Đóng"
           >
             <X className="w-5 h-5" />
@@ -175,40 +175,40 @@ export const ConfirmActionModal: React.FC<ConfirmActionModalProps> = ({
         {/* Body */}
         <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
           {description && (
-            <p className="text-sm text-gray-600">{description}</p>
+            <p className="text-sm text-muted-foreground">{description}</p>
           )}
 
           {/* Tx summary */}
           {(txReference || txAmount || userName) && (
-            <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1.5">
+            <div className="bg-background rounded-lg p-3 text-sm space-y-1.5">
               {userName && (
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Người dùng</span>
-                  <span className="font-medium text-gray-900">
+                  <span className="text-muted-foreground">Người dùng</span>
+                  <span className="font-medium text-foreground">
                     {userName}
-                    {userPhone && <span className="text-gray-500"> · {userPhone}</span>}
+                    {userPhone && <span className="text-muted-foreground"> · {userPhone}</span>}
                   </span>
                 </div>
               )}
               {txAmount && (
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Số tiền</span>
-                  <span className="font-bold text-gray-900">{txAmount}</span>
+                  <span className="text-muted-foreground">Số tiền</span>
+                  <span className="font-bold text-foreground">{txAmount}</span>
                 </div>
               )}
               {txReference && (
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Mã giao dịch</span>
-                  <span className="font-mono text-xs text-gray-700">{txReference}</span>
+                  <span className="text-muted-foreground">Mã giao dịch</span>
+                  <span className="font-mono text-xs text-foreground">{txReference}</span>
                 </div>
               )}
             </div>
           )}
 
           {variant === 'reject' && (
-            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-800">
+            <div className="flex items-start gap-2 bg-warning-subtle border border-warning/30 rounded-lg p-3">
+              <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-warning-strong">
                 Hành động từ chối sẽ được thông báo cho người dùng kèm lý do bạn nhập bên dưới.
               </p>
             </div>
@@ -216,9 +216,9 @@ export const ConfirmActionModal: React.FC<ConfirmActionModalProps> = ({
 
           {/* Reason input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Lý do {config.label} <span className="text-red-500">*</span>
-              <span className="text-gray-400 font-normal ml-2">(tối thiểu {minLength} ký tự)</span>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              Lý do {config.label} <span className="text-danger">*</span>
+              <span className="text-muted-foreground font-normal ml-2">(tối thiểu {minLength} ký tự)</span>
             </label>
             <textarea
               value={reason}
@@ -230,19 +230,19 @@ export const ConfirmActionModal: React.FC<ConfirmActionModalProps> = ({
               rows={4}
               maxLength={500}
               disabled={submitting || loading}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 disabled:bg-gray-100 resize-none"
+              className="w-full px-3 py-2 border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted resize-none"
             />
             <div className="flex justify-between items-center mt-1">
-              <span className={`text-xs ${trimmed.length >= minLength ? 'text-green-600' : 'text-gray-400'}`}>
+              <span className={`text-xs ${trimmed.length >= minLength ? 'text-primary' : 'text-muted-foreground'}`}>
                 {trimmed.length}/{minLength} ký tự tối thiểu
               </span>
-              <span className="text-xs text-gray-400">{trimmed.length}/500</span>
+              <span className="text-xs text-muted-foreground">{trimmed.length}/500</span>
             </div>
           </div>
 
           {/* Suggestions */}
           <div>
-            <p className="text-xs text-gray-500 mb-1.5">Gợi ý nhanh:</p>
+            <p className="text-xs text-muted-foreground mb-1.5">Gợi ý nhanh:</p>
             <div className="flex flex-wrap gap-1.5">
               {SUGGESTIONS[variant].map((s) => (
                 <button
@@ -250,7 +250,7 @@ export const ConfirmActionModal: React.FC<ConfirmActionModalProps> = ({
                   type="button"
                   onClick={() => setReason(s)}
                   disabled={submitting || loading}
-                  className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full disabled:opacity-50"
+                  className="text-xs px-2 py-1 bg-muted hover:bg-muted/70 text-foreground rounded-full disabled:opacity-50"
                 >
                   {s}
                 </button>
@@ -260,11 +260,11 @@ export const ConfirmActionModal: React.FC<ConfirmActionModalProps> = ({
 
           {/* Double confirm for high-risk action */}
           {requirePhrase && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-2">
-              <p className="text-xs text-red-700 font-medium">
+            <div className="bg-danger-subtle border border-danger/20 rounded-lg p-3 space-y-2">
+              <p className="text-xs text-danger-strong font-medium">
                 Hành động quan trọng — vui lòng xác nhận
               </p>
-              <p className="text-xs text-red-600">
+              <p className="text-xs text-danger">
                 Nhập chính xác cụm từ <span className="font-mono font-bold">{requirePhrase}</span> để tiếp tục:
               </p>
               <input
@@ -272,24 +272,24 @@ export const ConfirmActionModal: React.FC<ConfirmActionModalProps> = ({
                 onChange={(e) => setConfirmText(e.target.value)}
                 placeholder={requirePhrase}
                 disabled={submitting || loading}
-                className="w-full px-3 py-2 border border-red-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full px-3 py-2 border border-danger/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-danger"
               />
             </div>
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2">
+            <div className="bg-danger-subtle border border-danger/20 text-danger-strong text-sm rounded-lg px-3 py-2">
               {error}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 bg-gray-50 border-t flex gap-2">
+        <div className="px-5 py-3 bg-background border-t flex gap-2">
           <button
             onClick={onClose}
             disabled={submitting || loading}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 text-sm font-medium disabled:opacity-50"
+            className="flex-1 px-4 py-2 border border-input text-foreground rounded-lg hover:bg-muted/70 text-sm font-medium disabled:opacity-50"
           >
             Hủy
           </button>

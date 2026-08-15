@@ -7,7 +7,15 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authApi, setAuthToken, setRefreshToken, ApiUser } from '../lib/api';
 
-export type UserRole = 'user' | 'admin';
+export type UserRole = 'user' | 'admin' | 'super_admin';
+
+const isDev = (): boolean => {
+  try {
+    return typeof import.meta !== 'undefined' && Boolean((import.meta as any).env?.DEV);
+  } catch {
+    return typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
+  }
+};
 
 export interface AuthUser {
   id: string;
@@ -43,13 +51,15 @@ interface AuthState {
   checkAuth: () => Promise<void>;
 }
 
-// Fallback: localStorage-based auth (khi backend offline)
+// Fallback: localStorage-based auth (chỉ kích hoạt khi DEV mode)
+// Token giả chỉ có giá trị cho UI client-side, KHÔNG thể gọi được các route admin
+// bảo vệ bằng JWT ở backend. Vì vậy chỉ bật dev-mode mock để test giao diện.
 const MOCK_ADMIN = {
   phone: 'admin',
   password: 'admin123',
   user: {
     id: 'admin-local',
-    fullName: 'Quản trị viên',
+    fullName: 'Quản trị viên (DEV)',
     phone: 'admin',
     email: 'admin@vgreen.vn',
     role: 'admin' as UserRole,
@@ -58,6 +68,11 @@ const MOCK_ADMIN = {
     createdAt: new Date().toISOString(),
   },
 };
+
+if (MOCK_ADMIN && !isDev()) {
+  // Đảm bảo mock không hoạt động ở production: đánh dấu null
+  console.warn('[authStore] MOCK_ADMIN fallback is disabled in production');
+}
 
 function createReferralCode(): string {
   return `VIC${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
@@ -98,31 +113,40 @@ if (apiResult.success && apiResult.user && apiResult.token) {
           return { success: true };
         }
 
-        if (phone === MOCK_ADMIN.phone && password === MOCK_ADMIN.password) {
-          const token = `token_admin_${Date.now()}`;
+        // CHỈ chấp nhận MOCK_ADMIN khi ở DEV mode và backend thực sự không phản hồi
+        if (isDev() && phone === MOCK_ADMIN.phone && password === MOCK_ADMIN.password) {
+          console.warn(
+            '[authStore] ⚠️  Đang dùng MOCK_ADMIN fallback. ' +
+            'Backend API phải không khả dụng. Mọi thao tác admin đều sẽ thất bại.'
+          );
+          const token = `dev_mock_admin_${Date.now()}`;
           set({ user: MOCK_ADMIN.user, token, isAuthenticated: true, isLoading: false });
           return { success: true };
         }
 
-        const storedUsers = JSON.parse(localStorage.getItem('vgreen_users') || '[]') as Array<
-          RegisterData & { id: string; referralCode: string; referredBy?: string; createdAt: string }
-        >;
-        const found = storedUsers.find((u) => u.phone === phone && u.password === password);
-        if (found) {
-          const user: AuthUser = {
-            id: found.id,
-            fullName: found.fullName,
-            phone: found.phone,
-            email: `${found.phone}@vgreen.vn`,
-            role: 'user',
-            referralCode: found.referralCode,
-            referredBy: found.referredBy,
-            kycStatus: 'none',
-            createdAt: found.createdAt,
-          };
-          const token = `token_user_${Date.now()}`;
-          set({ user, token, isAuthenticated: true, isLoading: false });
-          return { success: true };
+        // Local fallback chỉ hoạt động khi DEV mode và backend thực sự offline
+        if (isDev()) {
+          const storedUsers = JSON.parse(localStorage.getItem('vgreen_users') || '[]') as Array<
+            RegisterData & { id: string; referralCode: string; referredBy?: string; createdAt: string }
+          >;
+          const found = storedUsers.find((u) => u.phone === phone && u.password === password);
+          if (found) {
+            console.warn('[authStore] Đang dùng localStorage fallback (DEV mode, backend offline)');
+            const user: AuthUser = {
+              id: found.id,
+              fullName: found.fullName,
+              phone: found.phone,
+              email: `${found.phone}@vgreen.vn`,
+              role: 'user',
+              referralCode: found.referralCode,
+              referredBy: found.referredBy,
+              kycStatus: 'none',
+              createdAt: found.createdAt,
+            };
+            const token = `dev_mock_user_${Date.now()}`;
+            set({ user, token, isAuthenticated: true, isLoading: false });
+            return { success: true };
+          }
         }
 
         set({ isLoading: false });
@@ -155,7 +179,12 @@ if (apiResult.success && apiResult.user && apiResult.token) {
           return { success: true };
         }
 
-        // Fallback: localStorage
+        // Fallback: localStorage - chỉ hoạt động ở DEV mode
+        if (!isDev()) {
+          set({ isLoading: false });
+          return { success: false, error: apiResult.error || 'Backend không khả dụng' };
+        }
+
         const storedUsers = JSON.parse(localStorage.getItem('vgreen_users') || '[]') as Array<
           RegisterData & { id: string; referralCode: string; referredBy?: string; createdAt: string }
         >;
@@ -192,7 +221,7 @@ if (apiResult.success && apiResult.user && apiResult.token) {
           createdAt: newUser.createdAt,
         };
 
-        const token = `token_user_${Date.now()}`;
+        const token = `dev_mock_user_${Date.now()}`;
         set({ user, token, isAuthenticated: true, isLoading: false });
         return { success: true };
       },

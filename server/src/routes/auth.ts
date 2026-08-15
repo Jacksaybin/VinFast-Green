@@ -6,6 +6,7 @@ import { Router, Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { authService } from '../services/authService';
 import { requireAuth, requireAdmin, AuthRequest, verifyRefreshToken, generateTokens } from '../middleware/auth';
+import { tokenBlacklist } from '../middleware/tokenBlacklist';
 import { ok, badRequest, created, serverError } from '../utils/response';
 import { rateLimitMiddleware } from '../middleware/rateLimit';
 import { auditLog } from '../middleware/audit';
@@ -126,28 +127,29 @@ router.get('/referrals', requireAuth, async (req: AuthRequest, res: Response) =>
 });
 
 /**
- * Logout - revokes a refresh token (if provided) and logs the action.
- * Stateless access tokens remain valid until their natural expiry.
+ * Logout - revokes refresh token, blacklist access token (jti), logs action.
+ * Yêu cầu Authorization header để biết jti cần blacklist.
  */
 router.post(
   '/logout',
+  requireAuth,
   [body('refreshToken').optional()],
-  async (req: Request, res: Response) => {
+  async (req: AuthRequest, res: Response) => {
     try {
+      const payload = req.user!;
       const { refreshToken } = req.body;
+
+      // Blacklist access token jti (hết hạn tự nhiên thì auto cleanup)
+      if (payload.jti) {
+        tokenBlacklist.add(payload.jti, payload.userId, payload.exp, 'logout');
+      }
+
       if (refreshToken) {
         await query('DELETE FROM refresh_tokens WHERE token = $1', [refreshToken]);
       }
-      // Optionally pull userId from access token if Authorization header present
-      const auth = req.headers.authorization;
-      if (auth && auth.startsWith('Bearer ')) {
-        const { verifyAccessToken } = await import('../middleware/auth');
-        const payload = verifyAccessToken(auth.slice(7));
-        if (payload) {
-          await query('DELETE FROM refresh_tokens WHERE user_id = $1', [payload.userId]);
-          await auditLog({ userId: payload.userId, action: 'logout', req: req as any });
-        }
-      }
+      // Xoá tất cả refresh tokens của user
+      await query('DELETE FROM refresh_tokens WHERE user_id = $1', [payload.userId]);
+      await auditLog({ userId: payload.userId, action: 'logout', req: req as any });
       return ok(res, null, 'Đã đăng xuất');
     } catch (err) {
       return ok(res, null, 'Đã đăng xuất');

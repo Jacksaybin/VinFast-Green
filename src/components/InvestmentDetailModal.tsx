@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { X, Award } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { InvestmentPackage } from '../types';
 
 interface InvestmentDetailModalProps {
@@ -13,10 +14,12 @@ interface InvestmentDetailModalProps {
 }
 
 const InvestmentDetailModal: React.FC<InvestmentDetailModalProps> = ({ package: pkg, isOpen, onClose }) => {
+  const { t, i18n } = useTranslation();
   if (!isOpen) return null;
 
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
   const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('vi-VN').format(amount) + ' VND';
+    return new Intl.NumberFormat(locale).format(amount) + ' VND';
   };
 
   const formatPercent = (percent: number): string => {
@@ -24,16 +27,17 @@ const InvestmentDetailModal: React.FC<InvestmentDetailModalProps> = ({ package: 
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="bg-card rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Chi tiết gói đầu tư</h2>
-          <button 
+        <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">{t('investmentDetail.title')}</h2>
+          <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full"
+            className="p-2 hover:bg-muted rounded-full"
+            aria-label={t('common.close')}
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
 
@@ -42,77 +46,77 @@ const InvestmentDetailModal: React.FC<InvestmentDetailModalProps> = ({ package: 
           {/* Detailed Information */}
           {pkg.details && (
             <div className="space-y-3">
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-600">Phương pháp chia lợi nhuận</span>
+              <div className="flex justify-between items-center py-2 border-b border-border">
+                <span className="text-sm text-muted-foreground">{t('investmentDetail.profitSharingMethod')}</span>
                 <span className="text-sm font-medium text-right max-w-[60%]">{pkg.details.profitSharingMethod}</span>
               </div>
-              
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-600">Số tiền đầu tư tối thiểu</span>
-                <span className="text-sm font-medium text-green-600">{formatCurrency(pkg.details.minimumInvestment)}</span>
+
+              <div className="flex justify-between items-center py-2 border-b border-border">
+                <span className="text-sm text-muted-foreground">{t('investmentDetail.minimumInvestment')}</span>
+                <span className="text-sm font-medium text-primary">{formatCurrency(pkg.details.minimumInvestment)}</span>
               </div>
-              
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-600">Đầu tư không có rủi ro</span>
-                <span className="text-sm font-medium text-green-600">{formatPercent(pkg.details.riskFree)}</span>
+
+              <div className="flex justify-between items-center py-2 border-b border-border">
+                <span className="text-sm text-muted-foreground">{t('investmentDetail.riskFree')}</span>
+                <span className="text-sm font-medium text-primary">{formatPercent(pkg.details.riskFree)}</span>
               </div>
-              
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-600">Số tiền dự án</span>
+
+              <div className="flex justify-between items-center py-2 border-b border-border">
+                <span className="text-sm text-muted-foreground">{t('investmentDetail.projectAmount')}</span>
                 <span className="text-sm font-medium">{formatCurrency(pkg.details.projectAmount)}</span>
               </div>
-              
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-600">Lợi nhuận</span>
-                <span className="text-sm font-medium">Tỷ lệ {formatPercent(pkg.details.profitRate)} thu nhập (vốn và lãi)</span>
+
+              <div className="flex justify-between items-center py-2 border-b border-border">
+                <span className="text-sm text-muted-foreground">{t('investmentDetail.profit')}</span>
+                <span className="text-sm font-medium">{t('investmentDetail.profitRate', { rate: pkg.details.profitRate })}</span>
               </div>
-              
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-600">Giới hạn mua</span>
-                <span className="text-sm font-medium">{pkg.details.maxPurchaseLimit} phần</span>
+
+              <div className="flex justify-between items-center py-2 border-b border-border">
+                <span className="text-sm text-muted-foreground">{t('investmentDetail.maxPurchaseLimit')}</span>
+                <span className="text-sm font-medium">{t('investmentDetail.shares', { count: pkg.details.maxPurchaseLimit })}</span>
               </div>
-              
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-600">Tính toán lợi nhuận</span>
+
+              <div className="flex justify-between items-center py-2 border-b border-border">
+                <span className="text-sm text-muted-foreground">{t('investmentDetail.profitCalculation')}</span>
                 <span className="text-sm font-medium text-right max-w-[60%]">{pkg.details.profitCalculation}</span>
               </div>
-              
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-600">Phương pháp đổi khoản</span>
+
+              <div className="flex justify-between items-center py-2 border-b border-border">
+                <span className="text-sm text-muted-foreground">{t('investmentDetail.redemptionMethod')}</span>
                 <span className="text-sm font-medium text-right max-w-[60%]">{pkg.details.redemptionMethod}</span>
               </div>
-              
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-600">Thời gian giải quyết</span>
+
+              <div className="flex justify-between items-center py-2 border-b border-border">
+                <span className="text-sm text-muted-foreground">{t('investmentDetail.settlementTime')}</span>
                 <span className="text-sm font-medium">{pkg.details.settlementTime}</span>
               </div>
-              
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-sm text-gray-600">Số đầu tư</span>
+
+              <div className="flex justify-between items-center py-2 border-b border-border">
+                <span className="text-sm text-muted-foreground">{t('investmentDetail.investmentNumber')}</span>
                 <span className="text-sm font-medium">{pkg.details.investmentNumber}</span>
               </div>
 
               {/* Project Summary */}
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h5 className="text-sm font-semibold text-blue-900 mb-2 flex items-center">
+              <div className="bg-info-subtle p-4 rounded-lg">
+                <h5 className="text-info-strong mb-2 flex items-center text-sm font-semibold">
                   <Award className="w-4 h-4 mr-2" />
-                  Bản tóm tắt dự án
+                  {t('investmentDetail.projectSummary')}
                 </h5>
-                <p className="text-sm text-blue-700">{pkg.details.projectSummary}</p>
+                <p className="text-sm text-info">{pkg.details.projectSummary}</p>
               </div>
             </div>
           )}
 
           {/* Action Buttons */}
           <div className="flex space-x-3 pt-4">
-            <button 
+            <button
               onClick={onClose}
-              className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+              className="flex-1 bg-muted text-foreground py-3 px-4 rounded-lg font-medium hover:bg-muted/70 transition-colors"
             >
-              Đóng
+              {t('investmentDetail.close')}
             </button>
-            <button className="flex-1 bg-red-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-red-600 transition-colors">
-              Đầu tư ngay
+            <button className="flex-1 bg-gradient-primary text-primary-foreground py-3 px-4 rounded-lg font-medium hover:shadow-glow transition-all">
+              {t('investmentDetail.investNow')}
             </button>
           </div>
         </div>

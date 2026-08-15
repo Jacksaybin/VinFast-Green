@@ -10,13 +10,47 @@ import { Loading, Empty, ErrorBox } from '../components/ui/StateViews';
 
 const API_URL = (typeof process !== 'undefined' && (process as any).env?.VITE_API_URL) || 'http://localhost:3001';
 
+// Đồng bộ với AuditAction ở server/src/middleware/audit.ts
+// Khi thêm action mới ở backend, phải bổ sung ở đây
 const ACTIONS = [
-  'login', 'login_failed', 'login_locked', 'logout', 'register',
-  'kyc_submitted', 'kyc_approved', 'kyc_rejected',
-  'deposit_approve', 'deposit_reject', 'withdraw_approve', 'withdraw_reject',
-  'balance_adjusted', 'admin_credit', 'admin_debit',
-  'package_created', 'package_updated', 'news_created', 'news_updated',
-  'permission_granted', 'permission_revoked',
+  'login',
+  'login_failed',
+  'login_locked',
+  'logout',
+  'register',
+  'password_changed',
+  'profile_updated',
+  'deposit_request',
+  'deposit_approved',
+  'deposit_rejected',
+  'withdraw_request',
+  'withdraw_approved',
+  'withdraw_rejected',
+  'investment_created',
+  'investment_completed',
+  'daily_profit_credited',
+  'reinvestment_executed',
+  'balance_adjusted',
+  'kyc_submitted',
+  'kyc_approved',
+  'kyc_rejected',
+  'user_status_changed',
+  'user_role_changed',
+  'user_permissions_changed',
+  'referral_bonus_credited',
+  'referral_bonus_claimed',
+  'news_created',
+  'news_updated',
+  'news_deleted',
+  'package_created',
+  'package_updated',
+  'package_status_changed',
+  'notification_broadcast',
+  'chat_closed',
+  'admin_created',
+  'admin_updated',
+  'cron_profit_run',
+  'settings_updated',
 ];
 
 const formatDateTime = (s: string) => {
@@ -52,6 +86,7 @@ const AdminAudit: React.FC = () => {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
       if (action) params.set('action', action);
       if (userId) params.set('userId', userId);
+      if (userSearch.trim()) params.set('userSearch', userSearch.trim());
       if (fromDate) params.set('from', fromDate);
       if (toDate) params.set('to', toDate);
 
@@ -74,7 +109,7 @@ const AdminAudit: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, action, userId, fromDate, toDate]);
+  }, [page, action, userId, userSearch, fromDate, toDate]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -89,7 +124,10 @@ const AdminAudit: React.FC = () => {
     setPage(1);
   };
 
-  const hasAdvancedFilter = Boolean(userId || fromDate || toDate);
+  const hasAdvancedFilter = Boolean(userSearch.trim() || userId || fromDate || toDate);
+
+  // Áp dụng filter ngay khi user thay đổi text (debounce nhẹ qua reset page)
+  const applyUserSearch = () => setPage(1);
 
   const handleExportCsv = async () => {
     setExportLoading(true);
@@ -97,6 +135,7 @@ const AdminAudit: React.FC = () => {
       const params = new URLSearchParams();
       if (action) params.set('action', action);
       if (userId) params.set('userId', userId);
+      if (userSearch.trim()) params.set('userSearch', userSearch.trim());
       if (fromDate) params.set('from', fromDate);
       if (toDate) params.set('to', toDate);
 
@@ -149,8 +188,8 @@ const AdminAudit: React.FC = () => {
             : null;
           return (
             <div key={k} className="text-xs">
-              <span className="text-gray-500">{k}:</span>{' '}
-              <span className="font-medium text-gray-800">
+              <span className="text-muted-foreground">{k}:</span>{' '}
+              <span className="font-medium text-foreground">
                 {formatted ?? (typeof v === 'object' ? JSON.stringify(v) : String(v))}
                 {formatted && ' ₫'}
               </span>
@@ -165,21 +204,21 @@ const AdminAudit: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Shield className="w-6 h-6 text-green-600" />
-          <h2 className="text-xl font-bold text-gray-900">Nhật ký hoạt động</h2>
+          <Shield className="w-6 h-6 text-primary" />
+          <h2 className="text-xl font-bold text-foreground">Nhật ký hoạt động</h2>
         </div>
         <div className="flex gap-2">
           <button
             onClick={handleExportCsv}
             disabled={exportLoading || loading}
-            className="flex items-center gap-1.5 px-3 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-2 bg-primary text-white rounded-lg text-sm hover:bg-primary disabled:opacity-50"
           >
             <Download className="w-4 h-4" />
             {exportLoading ? 'Đang xuất...' : 'Xuất CSV'}
           </button>
           <button
             onClick={load}
-            className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200"
+            className="p-2 bg-muted rounded-lg hover:bg-muted/70"
             title="Tải lại"
           >
             <RefreshCw className="w-4 h-4" />
@@ -189,17 +228,17 @@ const AdminAudit: React.FC = () => {
 
       {stats && (
         <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl shadow-sm p-4">
-            <p className="text-sm text-gray-600">Tổng sự kiện</p>
-            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+          <div className="bg-card rounded-xl shadow-card p-4">
+            <p className="text-sm text-muted-foreground">Tổng sự kiện</p>
+            <p className="text-2xl font-bold text-foreground">{stats.total}</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm p-4">
-            <p className="text-sm text-gray-600">24 giờ qua</p>
-            <p className="text-2xl font-bold text-green-600">{stats.last24h}</p>
+          <div className="bg-card rounded-xl shadow-card p-4">
+            <p className="text-sm text-muted-foreground">24 giờ qua</p>
+            <p className="text-2xl font-bold text-primary">{stats.last24h}</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm p-4">
-            <p className="text-sm text-gray-600">Hành động phổ biến (7 ngày)</p>
-            <ul className="mt-1 text-xs text-gray-700 space-y-0.5">
+          <div className="bg-card rounded-xl shadow-card p-4">
+            <p className="text-sm text-muted-foreground">Hành động phổ biến (7 ngày)</p>
+            <ul className="mt-1 text-xs text-foreground space-y-0.5">
               {(stats.byAction || []).slice(0, 3).map((a: any) => (
                 <li key={a.action} className="flex justify-between">
                   <span className="font-mono">{a.action}</span>
@@ -207,17 +246,17 @@ const AdminAudit: React.FC = () => {
                 </li>
               ))}
               {(!stats.byAction || stats.byAction.length === 0) && (
-                <li className="text-gray-400">Chưa có dữ liệu</li>
+                <li className="text-muted-foreground">Chưa có dữ liệu</li>
               )}
             </ul>
           </div>
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm p-4 space-y-3">
+      <div className="bg-card rounded-xl shadow-card p-4 space-y-3">
         <div className="flex items-center gap-3 flex-wrap">
-          <Filter className="w-4 h-4 text-gray-500" />
-          <span className="text-sm text-gray-700">Hành động:</span>
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm text-foreground">Hành động:</span>
           <select
             value={action}
             onChange={(e) => { setAction(e.target.value); setPage(1); }}
@@ -229,38 +268,38 @@ const AdminAudit: React.FC = () => {
 
           <button
             onClick={() => setShowAdvanced((v) => !v)}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm border rounded-lg hover:bg-background"
           >
             {showAdvanced ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
             Bộ lọc nâng cao
             {hasAdvancedFilter && (
-              <span className="ml-1 w-2 h-2 bg-green-600 rounded-full" />
+              <span className="ml-1 w-2 h-2 bg-primary rounded-full" />
             )}
           </button>
 
-          <span className="ml-auto text-sm text-gray-500">{total} kết quả</span>
+          <span className="ml-auto text-sm text-muted-foreground">{total} kết quả</span>
         </div>
 
         {showAdvanced && (
           <div className="flex items-center gap-3 flex-wrap pt-2 border-t">
             <div className="flex items-center gap-2">
-              <Search className="w-4 h-4 text-gray-400" />
+              <Search className="w-4 h-4 text-muted-foreground" />
               <input
                 value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
+                onChange={(e) => { setUserSearch(e.target.value); setPage(1); }}
                 placeholder="SĐT hoặc họ tên"
                 className="px-3 py-1.5 border rounded-lg text-sm w-44"
               />
-              <button
-                onClick={() => { setUserId(userSearch.trim()); setPage(1); }}
-                className="px-3 py-1.5 bg-gray-100 rounded-lg text-sm hover:bg-gray-200"
-              >
-                Áp dụng
-              </button>
-              {userId && (
+              <input
+                value={userId}
+                onChange={(e) => { setUserId(e.target.value); setPage(1); }}
+                placeholder="User UUID (nâng cao)"
+                className="px-3 py-1.5 border rounded-lg text-sm w-56 font-mono text-xs"
+              />
+              {(userSearch || userId) && (
                 <button
-                  onClick={() => { setUserId(''); setUserSearch(''); setPage(1); }}
-                  className="p-1 text-gray-400 hover:text-gray-600"
+                  onClick={() => { setUserSearch(''); setUserId(''); setPage(1); }}
+                  className="p-1 text-muted-foreground hover:text-muted-foreground"
                   title="Xóa bộ lọc user"
                 >
                   <X className="w-4 h-4" />
@@ -269,14 +308,14 @@ const AdminAudit: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-gray-400" />
+              <Calendar className="w-4 h-4 text-muted-foreground" />
               <input
                 type="date"
                 value={fromDate}
                 onChange={(e) => { setFromDate(e.target.value); setPage(1); }}
                 className="px-3 py-1.5 border rounded-lg text-sm"
               />
-              <span className="text-gray-400">→</span>
+              <span className="text-muted-foreground">→</span>
               <input
                 type="date"
                 value={toDate}
@@ -288,7 +327,7 @@ const AdminAudit: React.FC = () => {
             {hasAdvancedFilter && (
               <button
                 onClick={resetFilters}
-                className="px-3 py-1.5 border border-red-200 text-red-600 rounded-lg text-sm hover:bg-red-50"
+                className="px-3 py-1.5 border border-danger/20 text-danger rounded-lg text-sm hover:bg-danger-subtle"
               >
                 Đặt lại
               </button>
@@ -305,56 +344,56 @@ const AdminAudit: React.FC = () => {
         <Empty
           title="Không có sự kiện"
           description="Chưa có hoạt động nào khớp bộ lọc."
-          icon={<Activity className="w-12 h-12 text-gray-300 mb-3" />}
+          icon={<Activity className="w-12 h-12 text-neutral-300 mb-3" />}
         />
       ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-card rounded-xl shadow-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-left">
+              <thead className="bg-background text-left">
                 <tr>
-                  <th className="px-4 py-3 font-medium text-gray-700 whitespace-nowrap">Thời gian</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">Người dùng</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">Hành động</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">IP</th>
-                  <th className="px-4 py-3 font-medium text-gray-700">Chi tiết</th>
+                  <th className="px-4 py-3 font-medium text-foreground whitespace-nowrap">Thời gian</th>
+                  <th className="px-4 py-3 font-medium text-foreground">Người dùng</th>
+                  <th className="px-4 py-3 font-medium text-foreground">Hành động</th>
+                  <th className="px-4 py-3 font-medium text-foreground">IP</th>
+                  <th className="px-4 py-3 font-medium text-foreground">Chi tiết</th>
                 </tr>
               </thead>
               <tbody>
                 {logs.map((log) => (
-                  <tr key={log.id} className="border-t hover:bg-gray-50">
-                    <td className="px-4 py-2 text-gray-700 whitespace-nowrap">
+                  <tr key={log.id} className="border-t hover:bg-background">
+                    <td className="px-4 py-2 text-foreground whitespace-nowrap">
                       {formatDateTime(log.created_at || log.createdAt)}
                     </td>
                     <td className="px-4 py-2">
                       {log.user_full_name ? (
                         <div>
                           <p className="font-medium">{log.user_full_name}</p>
-                          <p className="text-xs text-gray-500">{log.user_phone}</p>
+                          <p className="text-xs text-muted-foreground">{log.user_phone}</p>
                         </div>
                       ) : (
-                        <span className="text-gray-400">Hệ thống</span>
+                        <span className="text-muted-foreground">Hệ thống</span>
                       )}
                     </td>
                     <td className="px-4 py-2">
-                      <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
+                      <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
                         {log.action}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-xs text-gray-500 whitespace-nowrap">
+                    <td className="px-4 py-2 text-xs text-muted-foreground whitespace-nowrap">
                       {log.ip_address || '—'}
                     </td>
                     <td className="px-4 py-2">
                       {(log.old_data || log.new_data) ? (
                         <button
                           onClick={() => setSelectedLog(log)}
-                          className="flex items-center gap-1 text-xs text-green-600 hover:text-green-800"
+                          className="flex items-center gap-1 text-xs text-primary hover:text-success-strong"
                         >
                           <Eye className="w-3.5 h-3.5" />
                           Xem
                         </button>
                       ) : (
-                        <span className="text-xs text-gray-300">—</span>
+                        <span className="text-xs text-neutral-300">—</span>
                       )}
                     </td>
                   </tr>
@@ -370,7 +409,7 @@ const AdminAudit: React.FC = () => {
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="p-2 border rounded-lg disabled:opacity-50 hover:bg-gray-100"
+            className="p-2 border rounded-lg disabled:opacity-50 hover:bg-muted"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -378,7 +417,7 @@ const AdminAudit: React.FC = () => {
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
-            className="p-2 border rounded-lg disabled:opacity-50 hover:bg-gray-100"
+            className="p-2 border rounded-lg disabled:opacity-50 hover:bg-muted"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -391,14 +430,14 @@ const AdminAudit: React.FC = () => {
           onClick={() => setSelectedLog(null)}
         >
           <div
-            className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+            className="bg-card rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white">
-              <h3 className="font-semibold text-gray-900">Chi tiết sự kiện #{selectedLog.id}</h3>
+            <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-card">
+              <h3 className="font-semibold text-foreground">Chi tiết sự kiện #{selectedLog.id}</h3>
               <button
                 onClick={() => setSelectedLog(null)}
-                className="p-1 text-gray-400 hover:text-gray-600"
+                className="p-1 text-muted-foreground hover:text-muted-foreground"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -406,48 +445,48 @@ const AdminAudit: React.FC = () => {
             <div className="p-4 space-y-3">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-gray-500 text-xs">Thời gian</p>
+                  <p className="text-muted-foreground text-xs">Thời gian</p>
                   <p className="font-medium">{formatDateTime(selectedLog.created_at)}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs">Hành động</p>
-                  <p className="font-mono text-xs bg-gray-100 px-2 py-1 rounded inline-block">
+                  <p className="text-muted-foreground text-xs">Hành động</p>
+                  <p className="font-mono text-xs bg-muted px-2 py-1 rounded inline-block">
                     {selectedLog.action}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs">Người dùng</p>
+                  <p className="text-muted-foreground text-xs">Người dùng</p>
                   <p className="font-medium">
                     {selectedLog.user_full_name || 'Hệ thống'}
                   </p>
                   {selectedLog.user_phone && (
-                    <p className="text-xs text-gray-500">{selectedLog.user_phone}</p>
+                    <p className="text-xs text-muted-foreground">{selectedLog.user_phone}</p>
                   )}
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs">IP</p>
+                  <p className="text-muted-foreground text-xs">IP</p>
                   <p className="font-mono text-xs">{selectedLog.ip_address || '—'}</p>
                 </div>
                 {selectedLog.user_agent && (
                   <div className="col-span-2">
-                    <p className="text-gray-500 text-xs">User-Agent</p>
+                    <p className="text-muted-foreground text-xs">User-Agent</p>
                     <p className="text-xs break-all">{selectedLog.user_agent}</p>
                   </div>
                 )}
               </div>
 
               <div className="border-t pt-3">
-                <p className="text-gray-500 text-xs mb-1">Metadata</p>
+                <p className="text-muted-foreground text-xs mb-1">Metadata</p>
                 {renderMetadata(selectedLog) || (
-                  <p className="text-xs text-gray-400">Không có metadata</p>
+                  <p className="text-xs text-muted-foreground">Không có metadata</p>
                 )}
               </div>
 
               <details className="border-t pt-3">
-                <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+                <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
                   Xem raw JSON
                 </summary>
-                <pre className="mt-2 text-xs bg-gray-50 p-3 rounded overflow-x-auto">
+                <pre className="mt-2 text-xs bg-background p-3 rounded overflow-x-auto">
                   {JSON.stringify(
                     {
                       old_data: selectedLog.old_data,

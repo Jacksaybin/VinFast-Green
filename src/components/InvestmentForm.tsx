@@ -4,6 +4,7 @@
 
 import React, { useState } from 'react';
 import { X, Calculator, Shield, AlertTriangle, CheckCircle, CreditCard, Wallet, Building2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { InvestmentPackage as PkgType } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import { useWalletStore } from '../stores/walletStore';
@@ -18,13 +19,17 @@ interface InvestmentFormProps {
   onSuccess?: () => void;
 }
 
+type StepKey = 'amount' | 'payment' | 'confirm' | 'success';
+
 const InvestmentForm: React.FC<InvestmentFormProps> = ({ pkg, isOpen, onClose, onSuccess }) => {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === 'en' ? 'en' : 'vi';
   const user = useAuthStore((s) => s.user);
   const { balance } = useWalletStore();
   const { createInvestment } = useInvestmentStore();
   const { addNotification } = useNotificationStore();
 
-  const [step, setStep] = useState<'amount' | 'payment' | 'confirm' | 'success'>('amount');
+  const [step, setStep] = useState<StepKey>('amount');
   const [investmentAmount, setInvestmentAmount] = useState<number>(pkg.investmentAmount);
   const [paymentMethod, setPaymentMethod] = useState<'bank' | 'wallet' | 'card'>('wallet');
   const [shares, setShares] = useState<number>(1);
@@ -62,25 +67,25 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ pkg, isOpen, onClose, o
   const paymentMethods = [
     {
       id: 'wallet' as const,
-      name: 'Số dư ví V-GREEN',
+      name: t('investmentForm.walletMethod'),
       icon: <Wallet className="w-5 h-5" />,
-      description: 'Thanh toán từ số dư khả dụng',
+      description: t('investmentForm.walletMethodDesc'),
       fee: '0 VND',
       recommended: true,
     },
     {
       id: 'bank' as const,
-      name: 'Chuyển khoản ngân hàng',
+      name: t('investmentForm.bankMethod'),
       icon: <Building2 className="w-5 h-5" />,
-      description: 'Chuyển khoản qua ngân hàng',
+      description: t('investmentForm.bankMethodDesc'),
       fee: '0 VND',
       recommended: false,
     },
     {
       id: 'card' as const,
-      name: 'Thẻ tín dụng',
+      name: t('investmentForm.cardMethod'),
       icon: <CreditCard className="w-5 h-5" />,
-      description: 'Thanh toán bằng thẻ',
+      description: t('investmentForm.cardMethodDesc'),
       fee: '1.5%',
       recommended: false,
     },
@@ -88,42 +93,39 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ pkg, isOpen, onClose, o
 
   const handleConfirmInvestment = async () => {
     if (!user) {
-      setError('Vui lòng đăng nhập để tiếp tục');
+      setError(t('investmentForm.loginRequired'));
       return;
     }
 
     if (investmentAmount < minAmount) {
-      setError(`Số tiền tối thiểu là ${formatCurrency(minAmount)}`);
+      setError(t('investmentForm.minAmount', { amount: formatCurrency(minAmount, locale) }));
       return;
     }
 
     if (paymentMethod === 'wallet' && balance < investmentAmount) {
-      setError(`Số dư ví không đủ. Bạn cần ${formatCurrency(investmentAmount - balance)} nữa`);
+      setError(t('investmentForm.insufficientBalance', { amount: formatCurrency(investmentAmount - balance, locale) }));
       return;
     }
 
     setIsProcessing(true);
     setError('');
 
-    // Backend handles wallet deduction atomically inside createInvestment.
-    // Do not call deductBalance locally to avoid double-spend.
     const result = await createInvestment(user.id, pkg, investmentAmount);
 
     if (!result.success) {
-      setError(result.error || 'Không thể thực hiện đầu tư');
+      setError(result.error || t('investmentForm.failed'));
       setIsProcessing(false);
       return;
     }
 
-    // Refresh wallet balance to reflect backend deduction
     if (paymentMethod === 'wallet') {
       useWalletStore.getState().refresh?.();
     }
 
     addNotification({
       userId: user.id,
-      title: 'Đầu tư thành công',
-      message: `Bạn đã đầu tư ${formatCurrency(investmentAmount)} vào gói ${pkg.name.split('(')[0].trim()}.`,
+      title: t('investmentForm.successTitle'),
+      message: t('investmentForm.successMessage', { amount: formatCurrency(investmentAmount, locale), pkg: pkg.name.split('(')[0].trim() }),
       type: 'transaction',
       link: '/my-account',
     });
@@ -135,7 +137,7 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ pkg, isOpen, onClose, o
 
   const handleClose = () => {
     if (step !== 'success') {
-      if (!confirm('Bạn có chắc muốn hủy đầu tư không?')) return;
+      if (!confirm(t('investmentForm.confirmCancel'))) return;
     }
     setStep('amount');
     setInvestmentAmount(pkg.investmentAmount);
@@ -148,46 +150,46 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ pkg, isOpen, onClose, o
   const renderAmountStep = () => (
     <div className="space-y-5">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">Chọn số tiền đầu tư</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-3">{t('investmentForm.chooseAmount')}</h3>
 
         {/* Package Info */}
-        <div className="bg-green-50 p-4 rounded-xl mb-4">
+        <div className="bg-success-subtle p-4 rounded-xl mb-4">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="font-semibold text-green-900">{pkg.name.split('(')[0].trim()}</h4>
-            <span className="text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-medium">
+            <h4 className="font-semibold text-success-strong">{pkg.name.split('(')[0].trim()}</h4>
+            <span className="rounded-full bg-success px-2 py-0.5 text-xs font-medium text-primary-foreground">
               {pkg.category === 'premium' ? 'Premium' : pkg.category === 'standard' ? 'Standard' : 'Basic'}
             </span>
           </div>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="flex items-center gap-1">
-              <span className="text-green-700">Lãi/ngày:</span>
-              <span className="font-bold text-green-900">{pkg.dailyProfit}%</span>
+              <span className="text-primary">{t('investmentForm.dailyProfitLabel')}:</span>
+              <span className="font-bold text-success-strong">{pkg.dailyProfit}%</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-green-700">Kỳ hạn:</span>
-              <span className="font-bold text-green-900">{pkg.investmentPeriod} ngày</span>
+              <span className="text-primary">{t('investmentForm.termLabel')}:</span>
+              <span className="font-bold text-success-strong">{pkg.investmentPeriod} {t('investmentForm.days')}</span>
             </div>
           </div>
           {pkg.details?.schedulingBonus && (
-            <div className="mt-2 text-xs text-green-800 bg-green-100 rounded px-2 py-1 inline-block">
-              Thưởng đặt lịch: +{formatCurrency(pkg.details.schedulingBonus)}
+            <div className="mt-2 text-xs text-success-strong bg-success-subtle rounded px-2 py-1 inline-block">
+              {t('investmentForm.schedulingBonus', { amount: formatCurrency(pkg.details.schedulingBonus, locale) })}
             </div>
           )}
         </div>
 
         {/* Balance check */}
         {paymentMethod === 'wallet' && (
-          <div className="flex items-center justify-between text-sm bg-blue-50 p-3 rounded-lg mb-3">
-            <span className="text-blue-700">Số dư ví:</span>
-            <span className="font-bold text-blue-900">{formatCurrency(balance)}</span>
+          <div className="flex items-center justify-between rounded-lg bg-info-subtle p-3 text-sm">
+            <span className="text-info">{t('investmentForm.walletBalance')}:</span>
+            <span className="font-bold text-info-strong">{formatCurrency(balance, locale)}</span>
           </div>
         )}
 
         {/* Amount Input */}
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Số tiền đầu tư (VND)
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              {t('investmentForm.amountLabel')}
             </label>
             <input
               type="number"
@@ -195,24 +197,25 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ pkg, isOpen, onClose, o
               onChange={(e) => handleAmountChange(Number(e.target.value))}
               min={minAmount}
               step={pkg.investmentAmount}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              className="w-full px-4 py-3 border border-input rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Tối thiểu: {formatCurrency(minAmount)}
+            <p className="text-xs text-muted-foreground mt-1">
+              {t('investmentForm.minimumLabel')}: {formatCurrency(minAmount, locale)}
             </p>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-sm font-medium text-gray-700">
-                Số gói ({formatCurrency(pkg.investmentAmount)}/gói)
+              <label className="text-sm font-medium text-foreground">
+                {t('investmentForm.sharesLabel', { amount: formatCurrency(pkg.investmentAmount, locale) })}
               </label>
-              <span className="text-xs text-gray-500">Tối đa: {maxShares} gói</span>
+              <span className="text-xs text-muted-foreground">{t('investmentForm.maxShares', { count: maxShares })}</span>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleSharesChange(shares - 1)}
-                className="w-10 h-10 bg-gray-100 rounded-xl font-bold text-gray-700 hover:bg-gray-200 transition-colors"
+                className="w-10 h-10  rounded-xl font-bold text-foreground  transition-colors"
+                aria-label={t('common.decrease')}
               >
                 −
               </button>
@@ -222,11 +225,12 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ pkg, isOpen, onClose, o
                 onChange={(e) => handleSharesChange(Number(e.target.value))}
                 min={1}
                 max={maxShares}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-center font-semibold focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="flex-1 px-4 py-2 border border-input rounded-xl text-center font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <button
                 onClick={() => handleSharesChange(shares + 1)}
-                className="w-10 h-10 bg-gray-100 rounded-xl font-bold text-gray-700 hover:bg-gray-200 transition-colors"
+                className="w-10 h-10  rounded-xl font-bold text-foreground  transition-colors"
+                aria-label={t('common.increase')}
               >
                 +
               </button>
@@ -235,44 +239,44 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ pkg, isOpen, onClose, o
         </div>
 
         {/* Profit Calculation */}
-        <div className="bg-gray-50 p-4 rounded-xl mt-4">
+        <div className="bg-background p-4 rounded-xl mt-4">
           <div className="flex items-center space-x-2 mb-3">
-            <Calculator className="w-4 h-4 text-gray-600" />
-            <span className="font-medium text-gray-900 text-sm">Ước tính lợi nhuận</span>
+            <Calculator className="w-4 h-4 text-muted-foreground" />
+            <span className="font-medium text-foreground text-sm">{t('investmentForm.estimatedProfit')}</span>
           </div>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">Lãi hàng ngày:</span>
-              <span className="font-medium text-green-600">{formatCurrency(profit.dailyProfit)}</span>
+              <span className="text-muted-foreground">{t('investmentForm.dailyInterest')}:</span>
+              <span className="font-medium text-primary">{formatCurrency(profit.dailyProfit, locale)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Tổng lãi ({pkg.investmentPeriod} ngày):</span>
-              <span className="font-medium text-green-600">{formatCurrency(profit.totalProfit)}</span>
+              <span className="text-muted-foreground">{t('investmentForm.totalInterest', { days: pkg.investmentPeriod })}:</span>
+              <span className="font-medium text-primary">{formatCurrency(profit.totalProfit, locale)}</span>
             </div>
             <div className="flex justify-between border-t pt-2">
-              <span className="font-medium text-gray-900">Tổng thu về:</span>
-              <span className="font-bold text-green-700">{formatCurrency(profit.totalReturn)}</span>
+              <span className="font-medium text-foreground">{t('investmentForm.totalReturn')}:</span>
+              <span className="font-bold text-primary">{formatCurrency(profit.totalReturn, locale)}</span>
             </div>
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg">{error}</div>
+        <div className="p-3 bg-danger-subtle text-danger-strong text-sm rounded-lg">{error}</div>
       )}
 
       <div className="flex space-x-3">
         <button
           onClick={handleClose}
-          className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-300 transition-colors"
+          className="flex-1 bg-muted text-foreground py-3 rounded-xl font-medium hover:bg-muted/70 transition-colors"
         >
-          Hủy
+          {t('investmentForm.cancel')}
         </button>
         <button
           onClick={() => { setError(''); setStep('payment'); }}
-          className="flex-1 bg-green-600 text-white py-3 rounded-xl font-medium hover:bg-green-700 transition-colors"
+          className="flex-1 bg-primary text-white py-3 rounded-xl font-medium hover:bg-primary transition-colors"
         >
-          Tiếp tục
+          {t('investmentForm.continue')}
         </button>
       </div>
     </div>
@@ -281,12 +285,12 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ pkg, isOpen, onClose, o
   const renderPaymentStep = () => (
     <div className="space-y-5">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">Phương thức thanh toán</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-3">{t('investmentForm.paymentMethod')}</h3>
 
         {/* Wallet balance reminder */}
-        <div className="flex items-center justify-between text-sm bg-blue-50 p-3 rounded-xl mb-4">
-          <span className="text-blue-700">Số dư ví khả dụng:</span>
-          <span className="font-bold text-blue-900">{formatCurrency(balance)}</span>
+        <div className="flex items-center justify-between text-sm bg-info-subtle p-3 rounded-xl mb-4">
+          <span className="text-info">{t('investmentForm.availableBalance')}:</span>
+          <span className="font-bold text-info-strong">{formatCurrency(balance, locale)}</span>
         </div>
 
         {/* Payment Methods */}
@@ -299,38 +303,38 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ pkg, isOpen, onClose, o
                 onClick={() => !isDisabled && setPaymentMethod(method.id)}
                 className={`p-4 border-2 rounded-xl cursor-pointer transition-all ${
                   isDisabled
-                    ? 'border-gray-100 opacity-50 cursor-not-allowed'
+                    ? 'border-border opacity-50 cursor-not-allowed'
                     : paymentMethod === method.id
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-primary bg-success-subtle'
+                    : 'border-border hover:border-input'
                 }`}
               >
                 <div className="flex items-center space-x-3">
                   <div className={`p-2 rounded-full ${
                     paymentMethod === method.id && !isDisabled
-                      ? 'bg-green-100 text-green-600'
-                      : 'bg-gray-100 text-gray-600'
+                      ? 'bg-success-subtle text-primary'
+                      : ' text-muted-foreground'
                   }`}>
                     {method.icon}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-gray-900">{method.name}</h4>
+                      <h4 className="font-medium text-foreground">{method.name}</h4>
                       {method.recommended && !isDisabled && (
-                        <span className="text-xs bg-green-200 text-green-800 px-1.5 py-0.5 rounded font-medium">
-                          Đề xuất
+                        <span className="rounded bg-success/30 px-1.5 py-0.5 text-xs font-medium text-success-strong">
+                          {t('investmentForm.recommended')}
                         </span>
                       )}
                       {isDisabled && (
-                        <span className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-medium">
-                          Không đủ
+                        <span className="text-xs bg-danger-subtle text-danger-strong px-1.5 py-0.5 rounded font-medium">
+                          {t('investmentForm.insufficient')}
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-500">{method.description}</p>
+                    <p className="text-sm text-muted-foreground">{method.description}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">Phí: {method.fee}</p>
+                    <p className="text-sm font-medium text-foreground">{t('investmentForm.fee')}: {method.fee}</p>
                   </div>
                 </div>
               </div>
@@ -339,19 +343,19 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ pkg, isOpen, onClose, o
         </div>
 
         {/* Summary */}
-        <div className="bg-blue-50 p-4 rounded-xl mt-4">
-          <h4 className="font-medium text-blue-900 mb-2 text-sm">Tóm tắt</h4>
-          <div className="space-y-1 text-sm text-blue-700">
+        <div className="bg-info-subtle p-4 rounded-xl mt-4">
+          <h4 className="font-medium text-info-strong mb-2 text-sm">{t('investmentForm.summary')}</h4>
+          <div className="space-y-1 text-sm text-info">
             <div className="flex justify-between">
-              <span>Gói:</span>
+              <span>{t('investmentForm.package')}:</span>
               <span className="font-medium">{pkg.name.split('(')[0].trim()}</span>
             </div>
             <div className="flex justify-between">
-              <span>Số tiền:</span>
-              <span className="font-medium">{formatCurrency(investmentAmount)}</span>
+              <span>{t('investmentForm.amount')}:</span>
+              <span className="font-medium">{formatCurrency(investmentAmount, locale)}</span>
             </div>
             <div className="flex justify-between">
-              <span>Số gói:</span>
+              <span>{t('investmentForm.shares')}:</span>
               <span className="font-medium">{shares}</span>
             </div>
           </div>
@@ -361,15 +365,15 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ pkg, isOpen, onClose, o
       <div className="flex space-x-3">
         <button
           onClick={() => setStep('amount')}
-          className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-300 transition-colors"
+          className="flex-1 bg-muted text-foreground py-3 rounded-xl font-medium hover:bg-muted/70 transition-colors"
         >
-          Quay lại
+          {t('common.back')}
         </button>
         <button
           onClick={() => setStep('confirm')}
-          className="flex-1 bg-green-600 text-white py-3 rounded-xl font-medium hover:bg-green-700 transition-colors"
+          className="flex-1 bg-primary text-white py-3 rounded-xl font-medium hover:bg-primary transition-colors"
         >
-          Tiếp tục
+          {t('investmentForm.continue')}
         </button>
       </div>
     </div>
@@ -378,59 +382,59 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ pkg, isOpen, onClose, o
   const renderConfirmStep = () => (
     <div className="space-y-5">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">Xác nhận đầu tư</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-3">{t('investmentForm.confirmTitle')}</h3>
 
         {/* Summary Card */}
-        <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-xl mb-4">
-          <h4 className="font-semibold text-gray-900 mb-3">Chi tiết đầu tư</h4>
+        <div className="bg-gradient-to-r from-brand-primary-50 to-brand-accent-50 p-4 rounded-xl mb-4 border border-brand-primary-200">
+          <h4 className="font-semibold text-foreground mb-3">{t('investmentForm.investmentDetails')}</h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">Gói đầu tư:</span>
+              <span className="text-muted-foreground">{t('investmentForm.packageLabel')}:</span>
               <span className="font-medium">{pkg.name.split('(')[0].trim()}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Số tiền:</span>
-              <span className="font-bold text-green-700">{formatCurrency(investmentAmount)}</span>
+              <span className="text-muted-foreground">{t('investmentForm.amountLabel')}:</span>
+              <span className="font-bold text-primary">{formatCurrency(investmentAmount, locale)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Lãi suất:</span>
-              <span className="font-medium text-green-600">{pkg.dailyProfit}%/ngày</span>
+              <span className="text-muted-foreground">{t('investmentForm.interestRate')}:</span>
+              <span className="font-medium text-primary">{pkg.dailyProfit}%/{t('investmentForm.day')}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Kỳ hạn:</span>
-              <span className="font-medium">{pkg.investmentPeriod} ngày</span>
+              <span className="text-muted-foreground">{t('investmentForm.term')}:</span>
+              <span className="font-medium">{pkg.investmentPeriod} {t('investmentForm.days')}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">Thanh toán:</span>
+              <span className="text-muted-foreground">{t('investmentForm.paymentLabel')}:</span>
               <span className="font-medium">
-                {paymentMethod === 'wallet' ? 'Số dư ví' : paymentMethod === 'bank' ? 'Ngân hàng' : 'Thẻ tín dụng'}
+                {paymentMethod === 'wallet' ? t('investmentForm.walletMethod') : paymentMethod === 'bank' ? t('investmentForm.bankMethod') : t('investmentForm.cardMethod')}
               </span>
             </div>
             {paymentMethod === 'wallet' && (
               <div className="flex justify-between">
-                <span className="text-gray-600">Sau khi trừ:</span>
-                <span className="font-bold text-orange-600">
-                  {formatCurrency(balance - investmentAmount)}
+                <span className="text-muted-foreground">{t('investmentForm.afterDeduction')}:</span>
+                <span className="font-bold text-warning-strong">
+                  {formatCurrency(balance - investmentAmount, locale)}
                 </span>
               </div>
             )}
             <div className="flex justify-between border-t pt-2">
-              <span className="font-semibold text-gray-900">Tổng thu về dự kiến:</span>
-              <span className="font-bold text-green-700">{formatCurrency(profit.totalReturn)}</span>
+              <span className="font-semibold text-foreground">{t('investmentForm.expectedReturn')}:</span>
+              <span className="font-bold text-primary">{formatCurrency(profit.totalReturn, locale)}</span>
             </div>
           </div>
         </div>
 
         {/* Risk Warning */}
-        <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+        <div className="bg-warning-subtle p-4 rounded-xl border border-warning/30">
           <div className="flex items-start space-x-3">
-            <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+            <AlertTriangle className="w-5 h-5 text-warning-strong mt-0.5 flex-shrink-0" />
             <div>
-              <h4 className="font-medium text-yellow-800 mb-1">Cảnh báo rủi ro</h4>
-              <ul className="text-sm text-yellow-700 space-y-1">
-                <li>• Đầu tư có thể mang lại lợi nhuận nhưng cũng có rủi ro</li>
-                <li>• Chỉ đầu tư số tiền bạn có thể chấp nhận mất</li>
-                <li>• Đọc kỹ điều khoản trước khi đầu tư</li>
+              <h4 className="font-medium  mb-1">{t('investmentForm.riskWarning')}</h4>
+              <ul className="text-sm text-warning/85 space-y-1">
+                <li>• {t('investmentForm.risk1')}</li>
+                <li>• {t('investmentForm.risk2')}</li>
+                <li>• {t('investmentForm.risk3')}</li>
               </ul>
             </div>
           </div>
@@ -443,41 +447,41 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ pkg, isOpen, onClose, o
             id="terms"
             checked={agreedTerms}
             onChange={(e) => setAgreedTerms(e.target.checked)}
-            className="mt-1 w-4 h-4 text-green-600 rounded focus:ring-green-500"
+            className="mt-1 w-4 h-4 text-primary rounded focus:ring-primary"
           />
-          <label htmlFor="terms" className="text-sm text-gray-700 leading-5">
-            Tôi đã đọc và đồng ý với{' '}
-            <a href="#" className="text-green-600 hover:text-green-700">
-              điều khoản và điều kiện
+          <label htmlFor="terms" className="text-sm text-foreground leading-5">
+            {t('investmentForm.termsPrefix')}{' '}
+            <a href="#" className="text-primary hover:text-primary">
+              {t('investmentForm.termsLink')}
             </a>{' '}
-            của V-GREEN. Tôi hiểu rằng đầu tư có thể có rủi ro.
+            {t('investmentForm.termsSuffix')}
           </label>
         </div>
 
         {error && (
-          <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg">{error}</div>
+          <div className="p-3 bg-danger-subtle text-danger-strong text-sm rounded-lg">{error}</div>
         )}
       </div>
 
       <div className="flex space-x-3">
         <button
           onClick={() => setStep('payment')}
-          className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-300 transition-colors"
+          className="flex-1 bg-muted text-foreground py-3 rounded-xl font-medium hover:bg-muted/70 transition-colors"
         >
-          Quay lại
+          {t('common.back')}
         </button>
         <button
           onClick={handleConfirmInvestment}
           disabled={!agreedTerms || isProcessing}
-          className="flex-1 bg-green-600 text-white py-3 rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="flex-1 bg-primary text-white py-3 rounded-xl font-medium hover:bg-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isProcessing ? (
             <>
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              <span>Đang xử lý...</span>
+              <span>{t('investmentForm.processing')}</span>
             </>
           ) : (
-            'Xác nhận đầu tư'
+            t('investmentForm.confirmInvestment')
           )}
         </button>
       </div>
@@ -486,116 +490,121 @@ const InvestmentForm: React.FC<InvestmentFormProps> = ({ pkg, isOpen, onClose, o
 
   const renderSuccessStep = () => (
     <div className="text-center space-y-5">
-      <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-        <CheckCircle className="w-10 h-10 text-green-600" />
+      <div className="w-20 h-20 bg-success-subtle rounded-full flex items-center justify-center mx-auto">
+        <CheckCircle className="w-10 h-10 text-primary" />
       </div>
 
       <div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Đầu tư thành công!</h3>
-        <p className="text-gray-600">
-          Bạn đã đầu tư <span className="font-semibold text-green-600">{formatCurrency(investmentAmount)}</span>{' '}
-          vào gói <span className="font-semibold">{pkg.name.split('(')[0].trim()}</span>
+        <h3 className="text-xl font-bold text-foreground mb-2">{t('investmentForm.successHeading')}</h3>
+        <p className="text-muted-foreground">
+          {t('investmentForm.successDesc', {
+            amount: formatCurrency(investmentAmount, locale),
+            pkg: pkg.name.split('(')[0].trim(),
+          })}
         </p>
       </div>
 
-      <div className="bg-green-50 p-4 rounded-xl text-left">
-        <h4 className="font-semibold text-green-900 mb-3">Thông tin đầu tư</h4>
-        <div className="space-y-2 text-sm text-green-800">
+      <div className="bg-success-subtle p-4 rounded-xl text-left">
+        <h4 className="font-semibold text-success-strong mb-3">{t('investmentForm.investmentInfo')}</h4>
+        <div className="space-y-2 text-sm text-success-strong">
           <div className="flex justify-between">
-            <span>Mã giao dịch:</span>
+            <span>{t('investmentForm.transactionCode')}:</span>
             <span className="font-mono font-medium">INV{pkg.id.slice(0, 4).toUpperCase()}</span>
           </div>
           <div className="flex justify-between">
-            <span>Số tiền:</span>
-            <span className="font-bold">{formatCurrency(investmentAmount)}</span>
+            <span>{t('investmentForm.amount')}:</span>
+            <span className="font-bold">{formatCurrency(investmentAmount, locale)}</span>
           </div>
           <div className="flex justify-between">
-            <span>Ngày bắt đầu:</span>
-            <span className="font-medium">{new Date().toLocaleDateString('vi-VN')}</span>
+            <span>{t('investmentForm.startDate')}:</span>
+            <span className="font-medium">{new Date().toLocaleDateString(locale === 'en' ? 'en-US' : 'vi-VN')}</span>
           </div>
           <div className="flex justify-between">
-            <span>Ngày đáo hạn:</span>
+            <span>{t('investmentForm.maturityDate')}:</span>
             <span className="font-medium">
-              {new Date(Date.now() + pkg.investmentPeriod * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN')}
+              {new Date(Date.now() + pkg.investmentPeriod * 24 * 60 * 60 * 1000).toLocaleDateString(locale === 'en' ? 'en-US' : 'vi-VN')}
             </span>
           </div>
           <div className="flex justify-between">
-            <span>Lãi/ngày:</span>
-            <span className="font-medium text-green-700">{formatCurrency(profit.dailyProfit)}</span>
+            <span>{t('investmentForm.dailyProfitLabel')}:</span>
+            <span className="font-medium text-primary">{formatCurrency(profit.dailyProfit, locale)}</span>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-3 bg-blue-50 p-3 rounded-xl">
-        <Shield className="w-5 h-5 text-blue-600 flex-shrink-0" />
-        <p className="text-xs text-blue-800 text-left">
-          Lợi nhuận sẽ được cộng vào ví hàng ngày. Bạn có thể theo dõi trong mục "Tài khoản của tôi".
+      <div className="flex items-center gap-3 bg-info-subtle p-3 rounded-xl">
+        <Shield className="w-5 h-5 text-info flex-shrink-0" />
+        <p className="text-xs text-info-strong text-left">
+          {t('investmentForm.successNote')}
         </p>
       </div>
 
       <div className="space-y-2">
         <button
           onClick={handleClose}
-          className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors"
+          className="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary transition-colors"
         >
-          Xem danh sách đầu tư
+          {t('investmentForm.viewList')}
         </button>
         <button
           onClick={handleClose}
-          className="w-full text-gray-600 py-2 text-sm hover:text-gray-900 transition-colors"
+          className="w-full text-muted-foreground py-2 text-sm hover:text-foreground transition-colors"
         >
-          Đóng
+          {t('investmentForm.close')}
         </button>
       </div>
     </div>
   );
 
-  const stepLabels = {
-    amount: 'Số tiền',
-    payment: 'Thanh toán',
-    confirm: 'Xác nhận',
-    success: 'Thành công',
+  const stepLabels: Record<StepKey, string> = {
+    amount: t('investmentForm.stepAmount'),
+    payment: t('investmentForm.stepPayment'),
+    confirm: t('investmentForm.stepConfirm'),
+    success: t('investmentForm.stepSuccess'),
   };
+  const steps: StepKey[] = ['amount', 'payment', 'confirm', 'success'];
+  const currentIndex = steps.indexOf(step);
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[92vh] overflow-hidden flex flex-col">
+      <div className="bg-card rounded-2xl shadow-2xl max-w-md w-full max-h-[92vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-white border-b border-gray-100 p-4 flex items-center justify-between flex-shrink-0">
+        <div className="bg-card border-b border-border p-4 flex items-center justify-between flex-shrink-0">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">
+            <h2 className="text-lg font-bold text-foreground">
               {stepLabels[step]}
             </h2>
-            <p className="text-xs text-gray-500 mt-0.5">{pkg.name.split('(')[0].trim()}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{pkg.name.split('(')[0].trim()}</p>
           </div>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover: rounded-full transition-colors"
+            aria-label={t('common.close')}
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
 
         {/* Progress */}
         <div className="px-4 pt-3 flex-shrink-0">
           <div className="flex items-center gap-1">
-            {(['amount', 'payment', 'confirm', 'success'] as const).map((s, i) => (
+            {steps.map((s, i) => (
               <div key={s} className="flex items-center flex-1">
                 <div
                   className={`h-1 flex-1 rounded-full transition-colors ${
-                    ['amount', 'payment', 'confirm', 'success'].indexOf(step) >= i
-                      ? 'bg-green-500'
-                      : 'bg-gray-200'
+                    currentIndex >= i
+                      ? 'bg-primary'
+                      : 'bg-muted'
                   }`}
                 />
               </div>
             ))}
           </div>
-          <div className="flex justify-between mt-1 text-xs text-gray-400">
-            <span>Số tiền</span>
-            <span>Thanh toán</span>
-            <span>Xác nhận</span>
-            <span>Xong</span>
+          <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+            <span>{t('investmentForm.stepAmount')}</span>
+            <span>{t('investmentForm.stepPayment')}</span>
+            <span>{t('investmentForm.stepConfirm')}</span>
+            <span>{t('investmentForm.stepDone')}</span>
           </div>
         </div>
 

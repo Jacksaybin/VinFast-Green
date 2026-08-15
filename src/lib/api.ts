@@ -108,13 +108,14 @@ export interface ApiUser {
   fullName: string;
   phone: string;
   email: string | null;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'super_admin';
   referralCode: string;
   referredBy?: string;
   kycStatus: 'none' | 'pending' | 'approved' | 'rejected';
   bankAccount?: string | null;
   bankName?: string | null;
   bankBranch?: string | null;
+  permissions?: Record<string, boolean>;
   createdAt: string;
 }
 
@@ -237,15 +238,15 @@ export const authApi = {
 
   async logout(): Promise<void> {
     try {
-      if (authToken || refreshToken) {
+      if (authToken || refreshAuthToken) {
         await doRequest('/auth/logout', {
           method: 'POST',
-          body: JSON.stringify({ refreshToken }),
+          body: JSON.stringify({ refreshToken: refreshAuthToken }),
         });
       }
     } catch {}
-    authToken = null;
-    refreshToken = null;
+    setAuthToken(null);
+    setRefreshToken(null);
   },
 };
 

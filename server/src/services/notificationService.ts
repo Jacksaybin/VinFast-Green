@@ -3,6 +3,7 @@
  */
 
 import { query, queryOne, execute } from '../db';
+import { auditLog } from '../middleware/audit';
 
 export const notificationService = {
   async getNotifications(userId: string, page = 1, limit = 20) {
@@ -64,7 +65,8 @@ export const notificationService = {
     message: string,
     type = 'info',
     link?: string,
-    targetFilter?: { role?: string; kycStatus?: string }
+    targetFilter?: { role?: string; kycStatus?: string },
+    actor?: { actorId?: string }
   ): Promise<number> {
     const where: string[] = ["status = 'active'"];
     const params: any[] = [title, message, type, link || null];
@@ -83,6 +85,21 @@ export const notificationService = {
        SELECT id, $1, $2, $3, $4 FROM users WHERE ${where.join(' AND ')}`,
       params
     );
+
+    await auditLog({
+      userId: actor?.actorId || null,
+      action: 'notification_broadcast',
+      entityType: 'notification',
+      newData: {
+        title,
+        message,
+        type,
+        link,
+        targetFilter,
+        recipients: count,
+      },
+    });
+
     return count;
   },
 };

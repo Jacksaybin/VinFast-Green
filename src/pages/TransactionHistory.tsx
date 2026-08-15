@@ -1,38 +1,35 @@
 /**
  * Trang lịch sử giao dịch
  * Kết nối backend API + fallback localStorage
+ * Đã tinh chỉnh: status badge token semantic, dùng SkeletonList + EmptyState + PageHeader.
  */
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Filter, RefreshCw } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { Filter, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Header from '../components/Header';
 import BottomNavigation from '../components/BottomNavigation';
+import PageHeader from '../components/ui/PageHeader';
+import { Loading } from '../components/ui/StateViews';
+import { EmptyState } from '../components/ui/EmptyState';
+import { SkeletonRow } from '../components/ui/skeleton';
+import { EmptyWallet } from '../assets/illustrations';
 import { useAuthStore } from '../stores/authStore';
 import { useWalletStore, TransactionType, TransactionStatus } from '../stores/walletStore';
 import { formatCurrency, formatDate } from '../lib/format';
+import { cn } from '../lib/utils';
 
-const TYPE_LABELS: Record<TransactionType, string> = {
-  deposit: 'Nạp tiền',
-  withdraw: 'Rút tiền',
-  investment: 'Đầu tư',
-  profit: 'Lợi nhuận',
-  bonus: 'Thưởng',
-  referral: 'Giới thiệu',
-  admin_credit: 'Admin cộng tiền',
-  admin_debit: 'Admin trừ tiền',
-  reinvestment: 'Tái đầu tư',
+const STATUS_CLASS: Record<TransactionStatus, string> = {
+  pending: 'bg-warning-subtle text-warning-strong',
+  completed: 'bg-success-subtle text-success-strong',
+  failed: 'bg-danger-subtle text-danger-strong',
+  cancelled: 'bg-muted text-muted-foreground',
 };
 
-const STATUS_LABELS: Record<TransactionStatus, { label: string; className: string }> = {
-  pending: { label: 'Chờ duyệt', className: 'bg-orange-100 text-orange-700' },
-  completed: { label: 'Hoàn thành', className: 'bg-green-100 text-green-700' },
-  failed: { label: 'Thất bại', className: 'bg-red-100 text-red-700' },
-  cancelled: { label: 'Đã hủy', className: 'bg-gray-100 text-gray-700' },
-};
+const OUT_TYPES: TransactionType[] = ['withdraw', 'investment', 'admin_debit', 'reinvestment'];
 
 const TransactionHistory: React.FC = () => {
-  const navigate = useNavigate();
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user)!;
   const { transactions, refresh } = useWalletStore();
   const [filter, setFilter] = useState<'all' | TransactionType>('all');
@@ -54,92 +51,134 @@ const TransactionHistory: React.FC = () => {
     setRefreshing(false);
   };
 
+  const typeLabel = (type: TransactionType | 'all') => {
+    if (type === 'all') return t('transactionHistory.filterAll');
+    const keyMap: Record<TransactionType, string> = {
+      deposit: 'transactionHistory.typeDeposit',
+      withdraw: 'transactionHistory.typeWithdraw',
+      investment: 'transactionHistory.typeInvestment',
+      profit: 'transactionHistory.typeProfit',
+      bonus: 'transactionHistory.typeBonus',
+      referral: 'transactionHistory.typeReferral',
+      admin_credit: 'transactionHistory.typeAdminCredit',
+      admin_debit: 'transactionHistory.typeAdminDebit',
+      reinvestment: 'transactionHistory.typeReinvestment',
+    };
+    return t(keyMap[type]);
+  };
+
+  const statusLabel = (status: TransactionStatus) => {
+    const keyMap: Record<TransactionStatus, string> = {
+      pending: 'transactionHistory.status.pending',
+      completed: 'transactionHistory.status.completed',
+      failed: 'transactionHistory.status.failed',
+      cancelled: 'transactionHistory.status.cancelled',
+    };
+    return t(keyMap[status]);
+  };
+
   const userTransactions = transactions.filter((tx) => tx.userId === user.id);
   const filteredTransactions = userTransactions.filter(
-    (tx) => filter === 'all' || tx.type === filter
+    (tx) => filter === 'all' || tx.type === filter,
   );
 
+  const filterTypes: Array<'all' | TransactionType> = ['all', 'deposit', 'withdraw', 'investment', 'profit'];
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Header />
 
-      <div className="px-4 py-4 pb-24">
-        <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={() => navigate('/my-account')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Quay lại</span>
-          </button>
+      <PageHeader
+        title={t('transactionHistory.title')}
+        subtitle={t('transactionHistory.count', { count: userTransactions.length })}
+        backTo="/my-account"
+        rightAction={
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="p-2 text-gray-500 hover:text-green-600 disabled:opacity-50"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+            aria-label={t('common.refresh')}
           >
-            <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={cn('h-5 w-5', refreshing && 'animate-spin')} />
           </button>
-        </div>
+        }
+      />
 
-        <h1 className="text-xl font-bold text-gray-900 mb-4">Lịch sử giao dịch</h1>
-
-        <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2">
-          <Filter className="w-4 h-4 text-gray-500 flex-shrink-0" />
-          {(['all', 'deposit', 'withdraw', 'investment', 'profit'] as const).map((type) => (
+      <div className="px-4 pb-24">
+        {/* Filter */}
+        <div className="mb-4 flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          <Filter className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+          {filterTypes.map((type) => (
             <button
               key={type}
               onClick={() => setFilter(type)}
-              className={`px-3 py-1 rounded-full text-xs whitespace-nowrap ${
-                filter === type ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border'
-              }`}
+              className={cn(
+                'whitespace-nowrap rounded-full px-3 py-1 text-xs transition-colors',
+                filter === type
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'border border-border bg-card text-muted-foreground hover:bg-muted',
+              )}
             >
-              {type === 'all' ? 'Tất cả' : TYPE_LABELS[type as TransactionType] || type}
+              {typeLabel(type)}
             </button>
           ))}
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-gray-500">
-            <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
-            <p>Đang tải...</p>
+          <div className="space-y-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonRow key={i} />
+            ))}
           </div>
         ) : filteredTransactions.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <p>Chưa có giao dịch nào</p>
-          </div>
+          <EmptyState
+            illustration={<EmptyWallet size={140} />}
+            title={t('transactionHistory.emptyTitle')}
+            description={t('transactionHistory.emptyDesc')}
+          />
         ) : (
           <div className="space-y-3">
-            {filteredTransactions.map((tx) => (
-              <div key={tx.id} className="bg-white rounded-xl shadow-sm p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="font-semibold text-gray-900">
-                      {TYPE_LABELS[tx.type] || tx.type}
-                    </p>
-                    <p className="text-xs text-gray-500">{tx.reference}</p>
+            {filteredTransactions.map((tx) => {
+              const isOut = OUT_TYPES.includes(tx.type as TransactionType);
+              return (
+                <div
+                  key={tx.id}
+                  className="rounded-xl border border-border bg-card p-4 shadow-card"
+                >
+                  <div className="mb-2 flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground">
+                        {typeLabel(tx.type)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{tx.reference}</p>
+                    </div>
+                    <span
+                      className={cn(
+                        'whitespace-nowrap rounded-full px-2 py-0.5 text-xs',
+                        STATUS_CLASS[tx.status] || 'bg-muted text-muted-foreground',
+                      )}
+                    >
+                      {statusLabel(tx.status)}
+                    </span>
                   </div>
-                  <span className={`px-2 py-0.5 text-xs rounded-full ${STATUS_LABELS[tx.status]?.className || ''}`}>
-                    {STATUS_LABELS[tx.status]?.label || tx.status}
-                  </span>
+                  {tx.description && (
+                    <p className="mb-2 text-sm text-muted-foreground">{tx.description}</p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">{formatDate(tx.createdAt)}</span>
+                    <span
+                      className={cn(
+                        'font-bold',
+                        isOut ? 'text-danger' : 'text-success-strong',
+                      )}
+                    >
+                      {isOut ? '-' : '+'}
+                      {formatCurrency(tx.amount)}
+                    </span>
+                  </div>
                 </div>
-                {tx.description && (
-                  <p className="text-sm text-gray-600 mb-2">{tx.description}</p>
-                )}
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">{formatDate(tx.createdAt)}</span>
-                  <span
-                    className={`font-bold ${
-                      ['withdraw', 'investment', 'admin_debit'].includes(tx.type)
-                        ? 'text-red-600'
-                        : 'text-green-600'
-                    }`}
-                  >
-                    {['withdraw', 'investment', 'admin_debit'].includes(tx.type) ? '-' : '+'}
-                    {formatCurrency(tx.amount)}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

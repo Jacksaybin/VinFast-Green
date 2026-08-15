@@ -44,8 +44,16 @@ router.put(
     if (!['active', 'suspended'].includes(status)) {
       return badRequest(res, 'Trạng thái không hợp lệ');
     }
-    const result = await authService.updateUserStatus(id, status);
-    if (!result) return badRequest(res, 'Cập nhật thất bại');
+    // Không cho phép tự khóa chính mình
+    if (req.user!.userId === id && status === 'suspended') {
+      return badRequest(res, 'Không thể tự khóa tài khoản admin của chính bạn');
+    }
+    const result = await authService.updateUserStatus(
+      id,
+      status,
+      { id: req.user!.userId, role: req.user!.role }
+    );
+    if (!result.success) return badRequest(res, result.error!);
     return ok(res, null, 'Cập nhật trạng thái thành công');
   }
 );
@@ -311,11 +319,15 @@ router.put(
   async (req: AuthRequest, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return badRequest(res, errors.array()[0].msg);
-    const result = await authService.updateAdmin(String(req.params.id), {
-      role: req.body.role,
-      permissions: req.body.permissions,
-    });
-    if (!result) return badRequest(res, 'Cập nhật thất bại');
+    const result = await authService.updateAdmin(
+      String(req.params.id),
+      {
+        role: req.body.role,
+        permissions: req.body.permissions,
+      },
+      { id: req.user!.userId, role: req.user!.role }
+    );
+    if (!result.success) return badRequest(res, result.error!);
     return ok(res, null, 'Cập nhật admin thành công');
   }
 );
@@ -324,7 +336,7 @@ router.put(
 // MANUAL CRON TRIGGER (Phase 3: daily profit run on demand)
 // =============================================
 
-router.post('/cron/daily-profit', requireAdmin, async (_req: AuthRequest, res: Response) => {
+router.post('/cron/daily-profit', requireAdmin, requirePermission(PERMISSIONS.CRON_RUN), async (_req: AuthRequest, res: Response) => {
   const result = await investmentService.addDailyProfits();
   return ok(res, result, 'Đã chạy job lợi nhuận hàng ngày');
 });
@@ -336,6 +348,7 @@ router.post('/cron/daily-profit', requireAdmin, async (_req: AuthRequest, res: R
 router.post(
   '/notifications/broadcast',
   requireAdmin,
+  requirePermission(PERMISSIONS.NOTIFICATIONS_BROADCAST),
   [
     body('title').trim().notEmpty().withMessage('Tiêu đề không được trống'),
     body('message').trim().notEmpty().withMessage('Nội dung không được trống'),
@@ -350,7 +363,8 @@ router.post(
       String(message),
       String(type),
       link ? String(link) : undefined,
-      targetFilter
+      targetFilter,
+      { actorId: req.user!.userId }
     );
     return ok(res, { recipients: count }, `Đã gửi tới ${count} người`);
   }

@@ -24,6 +24,7 @@ import referralRouter from './routes/referrals';
 import reinvestmentRouter from './routes/reinvestments';
 import { investmentService } from './services/investmentService';
 import { testConnection, query, queryOne } from './db';
+import { auditLog } from './middleware/audit';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -35,10 +36,14 @@ const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
 
 app.use(cors({
   origin: (origin: string | undefined, callback: any) => {
-    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+    // Allow requests with no Origin (e.g. curl, server-to-server) and any whitelisted origin.
+    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    return callback(new Error('Not allowed by CORS'));
+    // Pass `false` (not an Error) so the cors middleware responds with a proper
+    // CORS rejection (no ACAO header) instead of throwing a 500 — the browser
+    // then surfaces a clear CORS error instead of a generic network failure.
+    return callback(null, false);
   },
   credentials: true,
 }));
@@ -112,6 +117,53 @@ async function runMigrations() {
     await query(
       `CREATE INDEX IF NOT EXISTS idx_transactions_processed_by ON transactions(processed_by)`
     );
+
+    // Referral system tables (Phase 2)
+    await query(`
+      CREATE TABLE IF NOT EXISTS referral_bonuses (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        referrer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        referred_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        investment_id UUID REFERENCES investments(id) ON DELETE SET NULL,
+        bonus_amount DECIMAL(18, 2) NOT NULL,
+        bonus_type VARCHAR(30) NOT NULL CHECK (bonus_type IN ('signup', 'first_investment', 'milestone')),
+        status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'credited', 'cancelled', 'expired')),
+        description TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        credited_at TIMESTAMPTZ
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_referral_bonuses_referrer ON referral_bonuses(referrer_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_referral_bonuses_referred ON referral_bonuses(referred_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_referral_bonuses_status ON referral_bonuses(status)`);
+
+    // Reinvestments table
+    await query(`
+      CREATE TABLE IF NOT EXISTS reinvestments (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        original_investment_id UUID REFERENCES investments(id) ON DELETE SET NULL,
+        new_investment_id UUID REFERENCES investments(id) ON DELETE SET NULL,
+        amount DECIMAL(18, 2) NOT NULL,
+        profit_used DECIMAL(18, 2) DEFAULT 0,
+        cash_added DECIMAL(18, 2) DEFAULT 0,
+        package_id UUID REFERENCES packages(id) ON DELETE SET NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'completed' CHECK (status IN ('pending', 'completed', 'failed')),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_reinvestments_user ON reinvestments(user_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_reinvestments_original ON reinvestments(original_investment_id)`);
+
+    // Reinvestment tracking columns on investments
+    await query(`ALTER TABLE investments ADD COLUMN IF NOT EXISTS reinvested_from UUID REFERENCES investments(id) ON DELETE SET NULL`);
+    await query(`ALTER TABLE investments ADD COLUMN IF NOT EXISTS total_cycles INTEGER DEFAULT 1`);
+
+    // Referral tracking columns on users
+    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_signup_bonus_claimed BOOLEAN DEFAULT false`);
+    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_count INTEGER DEFAULT 0`);
+    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_total_earnings DECIMAL(18, 2) DEFAULT 0`);
+
     console.log('✅ Migrations applied');
   } catch (err) {
     console.error('⚠️  Migration failed:', err);
@@ -147,25 +199,82 @@ async function start() {
   const MAX_JOB_LOCK_MS = 30 * 1000;
   let jobRunning = false;
   let jobLastResult: string | null = null;
+  let jobLastRunAt: string | null = null;
+  let jobTotalRuns = 0;
 
-  async function runProfitJob() {
+  async function runProfitJob(trigger: 'cron' | 'manual' = 'cron') {
     if (jobRunning) return;
     jobRunning = true;
+    const runStart = Date.now();
     try {
       const result = await investmentService.addDailyProfits();
+      jobLastRunAt = new Date().toISOString();
+      jobTotalRuns++;
+      const durationMs = Date.now() - runStart;
+
+      // Lock bị instance khác giữ — bỏ qua silently
+      if (result.skipped === 'lock_held_by_other_instance') {
+        jobLastResult = 'skipped=lock_held_by_other_instance';
+        console.log(`⏭️  Daily profit job: skipped (lock held by other instance)`);
+        return;
+      }
+
       jobLastResult = `credited=${result.credited}, completed=${result.completed}`;
+      // Log cron run tới audit log (chỉ khi có hoạt động thực sự)
       if (result.credited > 0 || result.completed > 0) {
-        console.log(`💸 Daily profit job: ${jobLastResult}`);
+        console.log(`💸 Daily profit job: ${jobLastResult} (${durationMs}ms)`);
+        try {
+          await auditLog({
+            action: 'cron_profit_run',
+            entityType: 'system_job',
+            newData: {
+              trigger,
+              credited: result.credited,
+              completed: result.completed,
+              checked: result.checked,
+              durationMs,
+              runAt: jobLastRunAt,
+            },
+          });
+        } catch (logErr) {
+          console.error('Failed to audit cron run:', logErr);
+        }
       }
     } catch (err) {
       console.error('⚠️  Daily profit job failed:', err);
+      try {
+        await auditLog({
+          action: 'cron_profit_run',
+          entityType: 'system_job',
+          newData: {
+            trigger,
+            status: 'failed',
+            error: String(err),
+            durationMs: Date.now() - runStart,
+            runAt: new Date().toISOString(),
+          },
+        });
+      } catch {}
     } finally {
       setTimeout(() => { jobRunning = false; }, MAX_JOB_LOCK_MS);
     }
   }
 
-  runProfitJob();
-  setInterval(runProfitJob, 5 * 60 * 1000);
+  // Health endpoint mở rộng để monitoring
+  app.get('/health/cron', (_req, res) => {
+    res.json({
+      success: true,
+      data: {
+        jobRunning,
+        jobLastResult,
+        jobLastRunAt,
+        jobTotalRuns,
+      },
+    });
+  });
+
+  runProfitJob('cron');
+  setInterval(() => runProfitJob('cron'), 5 * 60 * 1000);
 
   app.listen(PORT, () => {
     console.log(`\n✅ Server running on http://localhost:${PORT}`);

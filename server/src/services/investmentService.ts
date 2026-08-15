@@ -7,6 +7,34 @@ import { auditLog } from '../middleware/audit';
 import { AuthRequest } from '../middleware/auth';
 import { awardInvestmentBonus } from '../routes/referrals';
 
+/**
+ * Distributed lock helpers (PostgreSQL session-level advisory locks).
+ * Không cần Redis — hoạt động trên bất kỳ PostgreSQL nào (Neon hỗ trợ).
+ *
+ * pg_try_advisory_lock(key) trả về true nếu lock acquired; false nếu lock
+ * đang được giữ bởi session khác. Lock tự động release khi session kết thúc
+ * hoặc khi gọi pg_advisory_unlock(key).
+ *
+ * Lưu ý: phải gọi trên CÙNG một pg client để giữ lock xuyên suốt job.
+ */
+const LOCK_DAILY_PROFIT = 0x56475244; // 'VGRD' hex → unique key for this app
+
+async function tryAcquireJobLock(client: any, key: number): Promise<boolean> {
+  const r = await client.query(
+    'SELECT pg_try_advisory_lock($1) AS locked',
+    [key]
+  );
+  return r.rows[0]?.locked === true;
+}
+
+async function releaseJobLock(client: any, key: number): Promise<void> {
+  try {
+    await client.query('SELECT pg_advisory_unlock($1)', [key]);
+  } catch {
+    // ignore - lock will be released when connection closes
+  }
+}
+
 function ref(prefix: string): string {
   return `${prefix}${Date.now().toString(36).toUpperCase()}`;
 }
@@ -76,11 +104,19 @@ export const investmentService = {
     try {
       await client.query('BEGIN');
 
-      await client.query(
+      // Guard against race condition: only deduct if balance is still sufficient.
+      // Without this clause, two concurrent investments could both succeed and
+      // drive the balance negative (the CHECK constraint would then throw).
+      const deductRes = await client.query(
         `UPDATE wallets SET balance = balance - $1, locked_balance = locked_balance + $1, updated_at = NOW()
-         WHERE user_id = $2`,
+         WHERE user_id = $2 AND balance >= $1
+         RETURNING balance`,
         [amount, userId]
       );
+      if (deductRes.rowCount === 0) {
+        await client.query('ROLLBACK');
+        return { success: false, error: 'Số dư không đủ hoặc đã thay đổi trong lúc xử lý' };
+      }
 
       await client.query(
         `INSERT INTO investments (user_id, package_id, amount, daily_profit, start_date, end_date, status, reference)
@@ -382,102 +418,204 @@ export const investmentService = {
    * Credit daily profit to all active investments.
    * Idempotent: uses last_profit_date so each investment is credited once per day.
    * Also completes investments past their end_date and releases principal.
+   *
+   * Performance: chạy trong MỘT transaction với batch UPDATE/INSERT để tránh
+   * cạn kiệt connection pool khi số lượng active investments lớn.
+   *
+   * Concurrency: dùng pg_try_advisory_lock để đảm bảo chỉ 1 instance chạy
+   * job này tại 1 thời điểm (an toàn cho multi-instance deployment).
    */
-  async addDailyProfits() {
+  async addDailyProfits(): Promise<{ credited: number; completed: number; checked: number; skipped?: string }> {
     const today = new Date().toISOString().slice(0, 10);
 
-    // 1. Credit profit for each active investment not yet credited today
-    const active = await query<any>(
-      `SELECT * FROM investments
-       WHERE status = 'active' AND (last_profit_date IS NULL OR last_profit_date < $1)`,
-      [today]
-    );
-
-    let credited = 0;
-    for (const inv of active) {
-      const amount = parseFloat(inv.amount);
-      const rate = parseFloat(inv.daily_profit);
-      const profit = Math.round(amount * (rate / 100) * 100) / 100;
-
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
-
-        await client.query(
-          `UPDATE investments SET accumulated_profit = accumulated_profit + $1, last_profit_date = $2, updated_at = NOW()
-           WHERE id = $3`,
-          [profit, today, inv.id]
-        );
-
-        await client.query(
-          `INSERT INTO transactions (user_id, type, amount, status, reference, description, metadata)
-           VALUES ($1, 'profit', $2, 'completed', $3, $4, $5)`,
-          [
-            inv.user_id,
-            profit,
-            `PF${inv.reference.slice(0, 12)}${Date.now().toString(36).toUpperCase()}`,
-            `Lãi đầu tư ${inv.amount.toLocaleString('vi-VN')} ₫`,
-            JSON.stringify({ investmentId: inv.id, reference: inv.reference }),
-          ]
-        );
-
-        await client.query('COMMIT');
-        credited++;
-      } catch (err) {
-        await client.query('ROLLBACK');
-        console.error('Daily profit error:', err);
-      } finally {
-        client.release();
+    // Acquire dedicated client for the whole job (lock + batch ops)
+    const client = await pool.connect();
+    let lockHeld = false;
+    try {
+      // ===== Distributed lock =====
+      lockHeld = await tryAcquireJobLock(client, LOCK_DAILY_PROFIT);
+      if (!lockHeld) {
+        return { credited: 0, completed: 0, checked: 0, skipped: 'lock_held_by_other_instance' };
       }
-    }
 
-    // 2. Complete investments past end_date and release principal + accrued profit back to balance
-    const due = await query<any>(
-      `SELECT * FROM investments WHERE status = 'active' AND end_date <= NOW()`
-    );
+      await client.query('BEGIN');
 
-    let completed = 0;
-    for (const inv of due) {
-      const amount = parseFloat(inv.amount);
-      const profit = parseFloat(inv.accumulated_profit || '0');
-      const total = Math.round((amount + profit) * 100) / 100;
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
+      // ===== Phase 1: credit daily profit (batch) =====
+      // 1a) Lock + compute profit trong 1 CTE
+      const profitResult = await client.query<{
+        id: string;
+        user_id: string;
+        amount: string;
+        daily_profit: string;
+        reference: string;
+        profit: string;
+      }>(`
+        WITH due AS (
+          SELECT id, user_id, amount, daily_profit, reference
+          FROM investments
+          WHERE status = 'active'
+            AND (last_profit_date IS NULL OR last_profit_date < $1)
+          FOR UPDATE SKIP LOCKED
+        )
+        SELECT
+          id, user_id, amount, daily_profit, reference,
+          ROUND((amount * daily_profit / 100)::numeric, 2) AS profit
+        FROM due
+      `, [today]);
 
+      const dueRows = profitResult.rows;
+      let credited = 0;
+
+      if (dueRows.length > 0) {
+        // 1b) Single UPDATE cho tất cả rows (PG tối ưu hơn N updates)
+        // Tận dụng VALUES clause + UPDATE ... FROM
+        const ids = dueRows.map((r) => r.id);
+        const profits = dueRows.map((r) => parseFloat(r.profit));
         await client.query(
-          `UPDATE investments SET status = 'completed', updated_at = NOW()
-           WHERE id = $1 AND status = 'active'`,
-          [inv.id]
+          `UPDATE investments i SET
+              accumulated_profit = i.accumulated_profit + v.profit,
+              last_profit_date = $1,
+              updated_at = NOW()
+           FROM unnest($2::uuid[], $3::numeric[]) AS v(id, profit)
+           WHERE i.id = v.id`,
+          [today, ids, profits]
         );
 
+        // 1c) Bulk INSERT transactions
+        const refBase = `PF${Date.now().toString(36).toUpperCase()}`;
+        const txValues: string[] = [];
+        const txParams: any[] = [];
+        let p = 1;
+        for (let i = 0; i < dueRows.length; i++) {
+          const r = dueRows[i];
+          const ref = `${refBase}${i.toString(36).toUpperCase().padStart(4, '0')}`;
+          txValues.push(`($${p++}, $${p++}, $${p++}, 'completed', $${p++}, $${p++}, $${p++}::jsonb)`);
+          txParams.push(
+            r.user_id,
+            parseFloat(r.profit),
+            ref,
+            ref,
+            `Lãi đầu tư ${parseFloat(r.amount).toLocaleString('vi-VN')} ₫`,
+            JSON.stringify({ investmentId: r.id, reference: r.reference })
+          );
+        }
         await client.query(
-          `UPDATE wallets SET locked_balance = locked_balance - $1, balance = balance + $2, updated_at = NOW()
-           WHERE user_id = $3`,
-          [amount, total, inv.user_id]
+          `INSERT INTO transactions (user_id, amount, status, reference, description, metadata)
+           VALUES ${txValues.join(', ')}`,
+          txParams
         );
 
+        // 1d) Bulk INSERT notifications
+        const notiValues: string[] = [];
+        const notiParams: any[] = [];
+        p = 1;
+        for (const r of dueRows) {
+          const profit = parseFloat(r.profit);
+          const amount = parseFloat(r.amount);
+          notiValues.push(`($${p++}, $${p++}, $${p++}, 'transaction', $${p++})`);
+          notiParams.push(
+            r.user_id,
+            'Lãi đầu tư hàng ngày',
+            `Bạn nhận ${profit.toLocaleString('vi-VN')} ₫ lãi từ khoản đầu tư ${amount.toLocaleString('vi-VN')} ₫.`,
+            '/my-account'
+          );
+        }
         await client.query(
           `INSERT INTO notifications (user_id, title, message, type, link)
-           VALUES ($1, $2, $3, 'transaction', $4)`,
-          [
-            inv.user_id,
-            'Đầu tư hoàn tất',
-            `Gói đầu tư ${amount.toLocaleString('vi-VN')} ₫ đã đáo hạn. Số tiền gốc ${amount.toLocaleString('vi-VN')} ₫ + lãi ${profit.toLocaleString('vi-VN')} ₫ đã về tài khoản.`,
-            '/my-account',
-          ]
+           VALUES ${notiValues.join(', ')}`,
+          notiParams
         );
 
-        await client.query('COMMIT');
-        completed++;
-      } catch (err) {
-        await client.query('ROLLBACK');
-        console.error('Complete investment error:', err);
-      } finally {
-        client.release();
+        credited = dueRows.length;
       }
-    }
 
-    return { credited, completed, checked: active.length + due.length };
+      // ===== Phase 2: complete matured investments (batch) =====
+      const maturedResult = await client.query<{
+        id: string;
+        user_id: string;
+        amount: string;
+        accumulated_profit: string;
+      }>(`
+        SELECT id, user_id, amount, accumulated_profit
+        FROM investments
+        WHERE status = 'active' AND end_date <= NOW()
+        FOR UPDATE SKIP LOCKED
+      `);
+
+      const matured = maturedResult.rows;
+      let completed = 0;
+
+      if (matured.length > 0) {
+        // 2a) Mark matured investments completed (bulk)
+        const matIds = matured.map((r) => r.id);
+        await client.query(
+          `UPDATE investments SET status = 'completed', updated_at = NOW()
+           WHERE id = ANY($1::uuid[]) AND status = 'active'`,
+          [matIds]
+        );
+
+        // 2b) Release principal + profit back to balance
+        // Group by user_id để 1 user có thể có nhiều matured investments
+        const byUser = new Map<string, { principal: number; profit: number }>();
+        for (const r of matured) {
+          const principal = parseFloat(r.amount);
+          const profit = parseFloat(r.accumulated_profit || '0');
+          const cur = byUser.get(r.user_id) || { principal: 0, profit: 0 };
+          cur.principal += principal;
+          cur.profit += profit;
+          byUser.set(r.user_id, cur);
+        }
+
+        for (const [userId, sums] of byUser) {
+          await client.query(
+            `UPDATE wallets
+                SET locked_balance = GREATEST(0, locked_balance - $1),
+                    balance = balance + $2,
+                    updated_at = NOW()
+              WHERE user_id = $3`,
+            [sums.principal, sums.principal + sums.profit, userId]
+          );
+        }
+
+        // 2c) Bulk INSERT notifications cho mỗi matured investment
+        const refBase = `MT${Date.now().toString(36).toUpperCase()}`;
+        const notiValues: string[] = [];
+        const notiParams: any[] = [];
+        let p = 1;
+        matured.forEach((r, i) => {
+          const amount = parseFloat(r.amount);
+          const profit = parseFloat(r.accumulated_profit || '0');
+          notiValues.push(`($${p++}, $${p++}, $${p++}, 'transaction', $${p++}, $${p++}::jsonb)`);
+          notiParams.push(
+            r.user_id,
+            'Đầu tư hoàn tất',
+            `Gói đầu tư ${amount.toLocaleString('vi-VN')} ₫ đã đáo hạn. Gốc ${amount.toLocaleString('vi-VN')} ₫ + lãi ${profit.toLocaleString('vi-VN')} ₫ đã về tài khoản.`,
+            '/my-account',
+            JSON.stringify({ investmentId: r.id, principal: amount, profit })
+          );
+        });
+        await client.query(
+          `INSERT INTO notifications (user_id, title, message, type, link, metadata)
+           VALUES ${notiValues.join(', ')}`,
+          notiParams
+        );
+
+        completed = matured.length;
+      }
+
+      await client.query('COMMIT');
+
+      return {
+        credited,
+        completed,
+        checked: dueRows.length + matured.length,
+      };
+    } catch (err) {
+      try { await client.query('ROLLBACK'); } catch {}
+      throw err;
+    } finally {
+      if (lockHeld) await releaseJobLock(client, LOCK_DAILY_PROFIT);
+      client.release();
+    }
   },
 };
