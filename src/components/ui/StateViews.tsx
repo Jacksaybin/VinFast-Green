@@ -1,47 +1,132 @@
 /**
  * Generic UI helpers - Loading, Empty, Error states
+ * Đã tinh chỉnh: dùng design token, hỗ trợ illustration prop, error box chuẩn semantic.
  */
 
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { cn } from '../../lib/utils';
 
-export const Loading: React.FC<{ text?: string; fullScreen?: boolean }> = ({ text = 'Đang tải...', fullScreen }) => {
+interface LoadingProps {
+  text?: string;
+  fullScreen?: boolean;
+  className?: string;
+}
+
+export const Loading: React.FC<LoadingProps> = ({
+  text = 'Đang tải...',
+  fullScreen,
+  className,
+}) => {
   const content = (
-    <div className="flex flex-col items-center justify-center py-10 text-gray-500">
-      <Loader2 className="w-8 h-8 animate-spin text-green-600" />
-      <p className="mt-2 text-sm">{text}</p>
+    <div
+      className={cn(
+        'flex flex-col items-center justify-center py-10 text-muted-foreground',
+        className,
+      )}
+    >
+      <div className="relative mb-3">
+        <div className="absolute inset-0 rounded-full bg-primary/20 blur-md" aria-hidden />
+        <Loader2 className="relative h-8 w-8 animate-spin text-primary" />
+      </div>
+      <p className="text-sm font-medium">{text}</p>
     </div>
   );
 
   if (fullScreen) {
-    return <div className="min-h-[60vh] flex items-center justify-center">{content}</div>;
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center bg-background">
+        {content}
+      </div>
+    );
   }
   return content;
 };
 
-export const Empty: React.FC<{ title?: string; description?: string; icon?: React.ReactNode }> = ({
+interface EmptyProps {
+  title?: string;
+  description?: string;
+  icon?: React.ReactNode;
+  illustration?: React.ReactNode;
+  action?: React.ReactNode;
+  className?: string;
+}
+
+export const Empty: React.FC<EmptyProps> = ({
   title = 'Chưa có dữ liệu',
   description,
   icon,
+  illustration,
+  action,
+  className,
 }) => (
-  <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-    {icon || (
-      <svg className="w-12 h-12 mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
+  <div
+    className={cn(
+      'flex flex-col items-center justify-center px-4 py-12 text-center text-muted-foreground',
+      className,
     )}
-    <h4 className="font-semibold text-gray-700">{title}</h4>
-    {description && <p className="mt-1 text-sm text-center max-w-sm">{description}</p>}
+  >
+    {illustration ? (
+      <div className="mb-4">{illustration}</div>
+    ) : icon ? (
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-muted text-muted-foreground/70">
+        {icon}
+      </div>
+    ) : (
+      <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-muted text-muted-foreground/60">
+        <svg
+          className="h-10 w-10"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.5}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      </div>
+    )}
+    <h4 className="font-semibold text-foreground">{title}</h4>
+    {description && (
+      <p className="mt-1 max-w-sm text-sm leading-relaxed">{description}</p>
+    )}
+    {action && <div className="mt-4">{action}</div>}
   </div>
 );
 
-export const ErrorBox: React.FC<{ message: string; onRetry?: () => void }> = ({ message, onRetry }) => (
-  <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-    <p className="text-sm font-medium">{message}</p>
-    {onRetry && (
-      <button onClick={onRetry} className="mt-2 text-sm underline">
-        Thử lại
-      </button>
+interface ErrorBoxProps {
+  message: string;
+  onRetry?: () => void;
+  className?: string;
+}
+
+export const ErrorBox: React.FC<ErrorBoxProps> = ({
+  message,
+  onRetry,
+  className,
+}) => (
+  <div
+    className={cn(
+      'flex items-start gap-3 rounded-xl border border-danger/20 bg-danger-subtle p-4 text-danger-strong shadow-sm',
+      className,
     )}
+    role="alert"
+  >
+    <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+    <div className="flex-1">
+      <p className="text-sm font-medium leading-relaxed">{message}</p>
+      {onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-2 text-sm font-medium text-danger-strong underline-offset-2 hover:underline"
+        >
+          Thử lại
+        </button>
+      )}
+    </div>
   </div>
 );

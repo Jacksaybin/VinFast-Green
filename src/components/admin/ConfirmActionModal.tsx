@@ -53,8 +53,8 @@ const VARIANT_CONFIG: Record<
     actionLabel: 'Xác nhận từ chối',
     icon: Ban,
     color: 'text-danger',
-    btnColor: 'bg-red-600',
-    btnHover: 'hover:bg-red-700',
+    btnColor: 'bg-danger',
+    btnHover: 'hover:bg-danger-strong',
     accentBg: 'bg-danger-subtle',
   },
 };
@@ -206,9 +206,9 @@ export const ConfirmActionModal: React.FC<ConfirmActionModalProps> = ({
           )}
 
           {variant === 'reject' && (
-            <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-800">
+            <div className="flex items-start gap-2 bg-warning-subtle border border-warning/30 rounded-lg p-3">
+              <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-warning-strong">
                 Hành động từ chối sẽ được thông báo cho người dùng kèm lý do bạn nhập bên dưới.
               </p>
             </div>
@@ -217,7 +217,7 @@ export const ConfirmActionModal: React.FC<ConfirmActionModalProps> = ({
           {/* Reason input */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">
-              Lý do {config.label} <span className="text-red-500">*</span>
+              Lý do {config.label} <span className="text-danger">*</span>
               <span className="text-muted-foreground font-normal ml-2">(tối thiểu {minLength} ký tự)</span>
             </label>
             <textarea
@@ -230,7 +230,7 @@ export const ConfirmActionModal: React.FC<ConfirmActionModalProps> = ({
               rows={4}
               maxLength={500}
               disabled={submitting || loading}
-              className="w-full px-3 py-2 border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100 resize-none"
+              className="w-full px-3 py-2 border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted resize-none"
             />
             <div className="flex justify-between items-center mt-1">
               <span className={`text-xs ${trimmed.length >= minLength ? 'text-primary' : 'text-muted-foreground'}`}>
@@ -250,7 +250,7 @@ export const ConfirmActionModal: React.FC<ConfirmActionModalProps> = ({
                   type="button"
                   onClick={() => setReason(s)}
                   disabled={submitting || loading}
-                  className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 text-foreground rounded-full disabled:opacity-50"
+                  className="text-xs px-2 py-1 bg-muted hover:bg-muted/70 text-foreground rounded-full disabled:opacity-50"
                 >
                   {s}
                 </button>
@@ -272,7 +272,7 @@ export const ConfirmActionModal: React.FC<ConfirmActionModalProps> = ({
                 onChange={(e) => setConfirmText(e.target.value)}
                 placeholder={requirePhrase}
                 disabled={submitting || loading}
-                className="w-full px-3 py-2 border border-red-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full px-3 py-2 border border-danger/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-danger"
               />
             </div>
           )}
@@ -289,7 +289,7 @@ export const ConfirmActionModal: React.FC<ConfirmActionModalProps> = ({
           <button
             onClick={onClose}
             disabled={submitting || loading}
-            className="flex-1 px-4 py-2 border border-input text-foreground rounded-lg hover:bg-gray-100 text-sm font-medium disabled:opacity-50"
+            className="flex-1 px-4 py-2 border border-input text-foreground rounded-lg hover:bg-muted/70 text-sm font-medium disabled:opacity-50"
           >
             Hủy
           </button>
