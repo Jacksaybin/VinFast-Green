@@ -81,7 +81,7 @@ const AdminKyc: React.FC = () => {
           <FileCheck className="w-6 h-6 text-primary" />
           <h2 className="text-xl font-bold text-foreground">Duyệt KYC</h2>
         </div>
-        <button onClick={load} className="p-2 bg-muted rounded-lg hover:bg-gray-200">
+        <button onClick={load} className="p-2 bg-muted rounded-lg hover:bg-muted/70">
           <RefreshCw className="w-4 h-4" />
         </button>
       </div>
@@ -102,7 +102,7 @@ const AdminKyc: React.FC = () => {
                   <p className="text-sm text-muted-foreground">{u.phone}</p>
                   {u.email && <p className="text-xs text-muted-foreground">{u.email}</p>}
                 </div>
-                <span className="text-xs px-2 py-1 bg-warning-subtle text-yellow-700 rounded-full">Chờ duyệt</span>
+                <span className="text-xs px-2 py-1 bg-warning-subtle text-warning-strong rounded-full">Chờ duyệt</span>
               </div>
 
               <div className="grid grid-cols-2 gap-2 mb-3">
@@ -128,7 +128,7 @@ const AdminKyc: React.FC = () => {
                 </button>
                 <button
                   onClick={() => { setSelected(u); setRejectReason(''); }}
-                  className="flex-1 bg-danger text-white py-2 rounded-lg hover:bg-red-700 flex items-center justify-center gap-1 text-sm"
+                  className="flex-1 bg-danger text-white py-2 rounded-lg hover:bg-danger-strong flex items-center justify-center gap-1 text-sm"
                 >
                   <XIcon className="w-4 h-4" /> Từ chối
                 </button>
@@ -169,7 +169,7 @@ const AdminKyc: React.FC = () => {
               <button
                 onClick={() => reject(selected.id)}
                 disabled={processing}
-                className="flex-1 bg-danger text-white py-2 rounded-lg hover:bg-red-700 disabled:opacity-50"
+                className="flex-1 bg-danger text-white py-2 rounded-lg hover:bg-danger-strong disabled:opacity-50"
               >
                 {processing ? 'Đang xử lý...' : 'Xác nhận từ chối'}
               </button>

@@ -218,7 +218,7 @@ const AdminAudit: React.FC = () => {
           </button>
           <button
             onClick={load}
-            className="p-2 bg-muted rounded-lg hover:bg-gray-200"
+            className="p-2 bg-muted rounded-lg hover:bg-muted/70"
             title="Tải lại"
           >
             <RefreshCw className="w-4 h-4" />
@@ -344,7 +344,7 @@ const AdminAudit: React.FC = () => {
         <Empty
           title="Không có sự kiện"
           description="Chưa có hoạt động nào khớp bộ lọc."
-          icon={<Activity className="w-12 h-12 text-gray-300 mb-3" />}
+          icon={<Activity className="w-12 h-12 text-neutral-300 mb-3" />}
         />
       ) : (
         <div className="bg-card rounded-xl shadow-card overflow-hidden">
@@ -393,7 +393,7 @@ const AdminAudit: React.FC = () => {
                           Xem
                         </button>
                       ) : (
-                        <span className="text-xs text-gray-300">—</span>
+                        <span className="text-xs text-neutral-300">—</span>
                       )}
                     </td>
                   </tr>

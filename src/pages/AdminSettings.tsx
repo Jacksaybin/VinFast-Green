@@ -124,7 +124,7 @@ const AdminSettings: React.FC = () => {
           <h2 className="text-xl font-bold text-foreground">Cài đặt hệ thống</h2>
         </div>
         <div className="flex gap-2">
-          <button onClick={load} className="p-2 bg-muted rounded-lg hover:bg-gray-200">
+          <button onClick={load} className="p-2 bg-muted rounded-lg hover:bg-muted/70">
             <RefreshCw className="w-4 h-4" />
           </button>
           <button onClick={() => setShowAdd(true)} className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary flex items-center gap-2">

@@ -596,7 +596,7 @@ const Admin: React.FC = () => {
             <div className="bg-card rounded-xl p-4 shadow-card">
               <h3 className="font-semibold text-foreground mb-3">Giao dịch gần đây</h3>
               {recentTransactions.map((tx) => (
-                <div key={tx.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                <div key={tx.id} className="flex items-center justify-between py-2 border border-neutral-50 last:border-0">
                   <div>
                     <p className="text-sm font-medium text-foreground">
                       {tx.type === 'deposit' ? 'Nạp tiền' : tx.type === 'withdraw' ? 'Rút tiền' : tx.type}
@@ -607,7 +607,7 @@ const Admin: React.FC = () => {
                     <p className={`text-sm font-bold ${tx.type === 'deposit' ? 'text-primary' : 'text-danger'}`}>
                       {tx.type === 'deposit' ? '+' : '-'}{formatCurrency(tx.amount)}
                     </p>
-                    <p className={`text-xs ${tx.status === 'completed' ? 'text-green-500' : 'text-warning-strong'}`}>
+                    <p className={`text-xs ${tx.status === 'completed' ? 'text-success' : 'text-warning-strong'}`}>
                       {tx.status === 'completed' ? 'Hoàn thành' : 'Chờ duyệt'}
                     </p>
                   </div>
@@ -627,7 +627,7 @@ const Admin: React.FC = () => {
               <h3 className="font-semibold text-foreground mb-4">Yêu cầu nạp tiền</h3>
               {pendingDeposits.length === 0 ? (
                 <div className="text-center py-8">
-                  <CreditCard className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                  <CreditCard className="w-12 h-12 text-neutral-300 mx-auto mb-2" />
                   <p className="text-muted-foreground text-sm">Không có yêu cầu nạp tiền nào</p>
                 </div>
               ) : (
@@ -681,7 +681,7 @@ const Admin: React.FC = () => {
               <h3 className="font-semibold text-foreground mb-4">Yêu cầu rút tiền</h3>
               {pendingWithdrawals.length === 0 ? (
                 <div className="text-center py-8">
-                  <Wallet className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                  <Wallet className="w-12 h-12 text-neutral-300 mx-auto mb-2" />
                   <p className="text-muted-foreground text-sm">Không có yêu cầu rút tiền nào</p>
                 </div>
               ) : (
@@ -756,7 +756,7 @@ const Admin: React.FC = () => {
               {/* User list */}
               {users.length === 0 ? (
                 <div className="text-center py-8">
-                  <Users className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                  <Users className="w-12 h-12 text-neutral-300 mx-auto mb-2" />
                   <p className="text-muted-foreground text-sm">Không tìm thấy người dùng</p>
                 </div>
               ) : (
@@ -898,9 +898,9 @@ const Admin: React.FC = () => {
                   </p>
 
                   {parseFloat(adjustAmount) >= 10_000_000 && (
-                    <div className="flex items-start gap-2 bg-warning-subtle border border-amber-200 rounded-lg p-2 mb-3">
+                    <div className="flex items-start gap-2 bg-warning-subtle border border-warning/30 rounded-lg p-2 mb-3">
                       <AlertTriangle className="w-4 h-4 text-warning-strong flex-shrink-0 mt-0.5" />
-                      <p className="text-xs text-amber-800">
+                      <p className="text-xs text-warning">
                         Số tiền ≥ 10 triệu — bạn sẽ cần nhập cụm từ xác nhận ở bước tiếp theo.
                       </p>
                     </div>
@@ -943,7 +943,7 @@ const Admin: React.FC = () => {
               </div>
               {packages.length === 0 ? (
                 <div className="text-center py-8">
-                  <Package className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                  <Package className="w-12 h-12 text-neutral-300 mx-auto mb-2" />
                   <p className="text-muted-foreground text-sm">Không có gói nào</p>
                 </div>
               ) : (
@@ -1000,7 +1000,7 @@ const Admin: React.FC = () => {
               </div>
               {newsList.length === 0 ? (
                 <div className="text-center py-8">
-                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                  <FileText className="w-12 h-12 text-neutral-300 mx-auto mb-2" />
                   <p className="text-muted-foreground text-sm">Chưa có bài viết nào</p>
                 </div>
               ) : (
@@ -1137,7 +1137,7 @@ const Admin: React.FC = () => {
             <h3 className="font-semibold text-foreground mb-4">Tất cả giao dịch {txTotal > 0 && `(${txTotal})`}</h3>
             {allTransactions.length === 0 ? (
               <div className="text-center py-8">
-                <DollarSign className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                <DollarSign className="w-12 h-12 text-neutral-300 mx-auto mb-2" />
                 <p className="text-muted-foreground text-sm">Chưa có giao dịch nào</p>
               </div>
             ) : (
@@ -1146,7 +1146,7 @@ const Admin: React.FC = () => {
                   {allTransactions.map((tx) => {
                     const reason = tx.metadata?.reason || (typeof tx.metadata === 'string' ? (() => { try { return JSON.parse(tx.metadata).reason; } catch { return null; } })() : null);
                     return (
-                    <div key={tx.id} className="flex items-start justify-between py-2 border-b border-gray-50 last:border-0 gap-3">
+                    <div key={tx.id} className="flex items-start justify-between py-2 border border-neutral-50 last:border-0 gap-3">
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-foreground">
                           {tx.type === 'deposit' ? 'Nạp tiền' : tx.type === 'withdraw' ? 'Rút tiền' : tx.type}
@@ -1167,7 +1167,7 @@ const Admin: React.FC = () => {
                         </p>
                         <span className={`text-xs px-1.5 py-0.5 rounded ${
                           tx.status === 'completed' ? 'bg-success-subtle text-primary' :
-                          tx.status === 'pending' ? 'bg-warning-subtle text-orange-700' :
+                          tx.status === 'pending' ? 'bg-warning-subtle text-warning-strong' :
                           'bg-danger-subtle text-danger-strong'
                         }`}>
                           {tx.status === 'completed' ? 'Hoàn thành' : tx.status === 'pending' ? 'Chờ duyệt' : 'Thất bại'}
@@ -1225,7 +1225,7 @@ const Admin: React.FC = () => {
               <div className="bg-card rounded-xl p-4 shadow-card">
                 {chatConversations.length === 0 ? (
                   <div className="text-center py-8">
-                    <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                    <MessageSquare className="w-12 h-12 text-neutral-300 mx-auto mb-2" />
                     <p className="text-muted-foreground text-sm">Chưa có cuộc hội thoại nào</p>
                   </div>
                 ) : (
