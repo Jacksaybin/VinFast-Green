@@ -5,7 +5,8 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageCircle, X, Send, Bot, Phone, Mail, Clock, User } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, Phone, Mail, Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { chatApi, ApiChatMessage } from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
 
@@ -28,6 +29,8 @@ function toMessage(row: ApiChatMessage): Message {
 }
 
 const LiveChat: React.FC = () => {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === 'en' ? 'en-US' : 'vi-VN';
   const user = useAuthStore((s) => s.user);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -58,13 +61,12 @@ const LiveChat: React.FC = () => {
       setMessages(data.messages.map(toMessage));
     } catch {
       setBackendOk(false);
-      // Fallback welcome message when backend offline
       setMessages((prev) =>
         prev.length === 0
           ? [
               {
                 id: 'welcome',
-                text: 'Xin chào! Tôi là chuyên viên tư vấn V-GREEN. Tôi có thể giúp gì cho bạn?',
+                text: t('liveChat.welcome'),
                 sender: 'support',
                 timestamp: new Date(),
               },
@@ -114,20 +116,20 @@ const LiveChat: React.FC = () => {
   const getAutoResponse = (userMessage: string): string => {
     const lowerMessage = userMessage.toLowerCase();
 
-    if (lowerMessage.includes('gói đầu tư') || lowerMessage.includes('đầu tư')) {
-      return 'V-GREEN hiện có 8 gói đầu tư với lãi suất từ 15-25%/năm. Bạn muốn tìm hiểu gói nào cụ thể?';
+    if (lowerMessage.includes(t('liveChat.packageKeyword1')) || lowerMessage.includes(t('liveChat.packageKeyword2'))) {
+      return t('liveChat.autoPackage');
     }
-    if (lowerMessage.includes('lãi suất') || lowerMessage.includes('lợi nhuận')) {
-      return 'Lãi suất V-GREEN từ 15-25%/năm tùy gói đầu tư. Gói VIP có lãi suất cao nhất với kỳ hạn dài.';
+    if (lowerMessage.includes(t('liveChat.rateKeyword1')) || lowerMessage.includes(t('liveChat.rateKeyword2'))) {
+      return t('liveChat.autoRate');
     }
-    if (lowerMessage.includes('rút tiền') || lowerMessage.includes('thanh toán')) {
-      return 'Bạn có thể rút tiền bất kỳ lúc nào trong giờ hành chính. Thời gian xử lý 1-3 ngày làm việc.';
+    if (lowerMessage.includes(t('liveChat.withdrawKeyword1')) || lowerMessage.includes(t('liveChat.withdrawKeyword2'))) {
+      return t('liveChat.autoWithdraw');
     }
-    if (lowerMessage.includes('đăng ký') || lowerMessage.includes('mở tài khoản')) {
-      return 'Để đăng ký V-GREEN, bạn cần CMND/CCCD, tài khoản ngân hàng và số điện thoại. Tôi có thể hỗ trợ bạn đăng ký ngay.';
+    if (lowerMessage.includes(t('liveChat.registerKeyword1')) || lowerMessage.includes(t('liveChat.registerKeyword2'))) {
+      return t('liveChat.autoRegister');
     }
 
-    return 'Cảm ơn bạn đã liên hệ. Tôi sẽ chuyển cho chuyên viên tư vấn để được hỗ trợ tốt nhất.';
+    return t('liveChat.autoGeneric');
   };
 
   const handleSendMessage = async () => {
@@ -178,10 +180,10 @@ const LiveChat: React.FC = () => {
   };
 
   const quickReplies = [
-    'Gói đầu tư nào phù hợp?',
-    'Lãi suất như thế nào?',
-    'Cách rút tiền ra sao?',
-    'Tôi muốn đăng ký',
+    t('liveChat.quick1'),
+    t('liveChat.quick2'),
+    t('liveChat.quick3'),
+    t('liveChat.quick4'),
   ];
 
   return (
@@ -191,16 +193,17 @@ const LiveChat: React.FC = () => {
         <div className="relative">
           {/* Notification Badge */}
           {!isOpen && (
-            <div className="absolute -top-2 -right-2 w-6 h-6 bg-danger-subtle0 rounded-full flex items-center justify-center z-10">
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-danger rounded-full flex items-center justify-center z-10">
               <span className="text-white text-xs font-bold">1</span>
             </div>
           )}
 
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="w-16 h-16 bg-gradient-to-br from-brand-primary-500 to-green-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center transform hover:scale-105 relative overflow-hidden"
+            className="w-16 h-16 bg-gradient-to-br from-brand-primary-500 to-brand-primary-700 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center transform hover:scale-105 relative overflow-hidden"
+            aria-label={isOpen ? t('liveChat.close') : t('liveChat.open')}
           >
-            <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-20"></div>
+            <div className="absolute inset-0 bg-success/40 rounded-full animate-ping opacity-20"></div>
 
             {isOpen ? (
               <X className="w-6 h-6 text-white relative z-10" />
@@ -223,18 +226,18 @@ const LiveChat: React.FC = () => {
                     <img src={SUPPORT_AVATAR} alt="support" className="w-full h-full object-cover" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-sm">V-GREEN Support</h3>
+                    <h3 className="font-semibold text-sm">{t('liveChat.headerTitle')}</h3>
                     <div className="flex items-center space-x-1">
-                      <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-300' : 'bg-gray-400'}`}></div>
+                      <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-success/50' : 'bg-muted-foreground/60'}`}></div>
                       <span className="text-xs text-primary-foreground">
-                        {isOnline ? 'Đang trực tuyến' : 'Offline - hỗ trợ tự động'}
+                        {isOnline ? t('liveChat.online') : t('liveChat.offline')}
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Phone className="w-4 h-4 text-green-200 hover:text-white cursor-pointer" />
-                  <Mail className="w-4 h-4 text-green-200 hover:text-white cursor-pointer" />
+                  <Phone className="w-4 h-4 text-success/80 hover:text-white cursor-pointer" aria-label={t('liveChat.phone')} />
+                  <Mail className="w-4 h-4 text-success/80 hover:text-white cursor-pointer" aria-label={t('liveChat.email')} />
                 </div>
               </div>
             </div>
@@ -243,12 +246,14 @@ const LiveChat: React.FC = () => {
           {/* Messages Container */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-background">
             {isLoading && (
-              <div className="text-center text-xs text-muted-foreground py-4">Đang tải hội thoại...</div>
+              <div className="text-center text-xs text-muted-foreground py-4">{t('liveChat.loading')}</div>
             )}
 
             {!hasSent && !isLoading && (
-              <div className="text-center text-xs text-muted-foreground bg-card rounded-lg p-3 border">
-                Chào {user?.fullName ? `anh/chị ${user.fullName}` : 'bạn'}! Đặt câu hỏi bên dưới, chuyên viên tư vấn sẽ phản hồi trong thời gian sớm nhất.
+              <div className="text-center text-xs text-muted-foreground bg-card rounded-lg p-3 border border-border">
+                {user?.fullName
+                  ? t('liveChat.greetingNamed', { name: user.fullName })
+                  : t('liveChat.greetingGeneric')}
               </div>
             )}
 
@@ -258,12 +263,12 @@ const LiveChat: React.FC = () => {
                   <div className={`px-4 py-2 rounded-2xl ${
                     message.sender === 'user'
                       ? 'bg-primary text-white rounded-br-md'
-                      : 'bg-card text-gray-800 rounded-bl-md shadow-sm border'
+                      : 'bg-card text-foreground rounded-bl-md shadow-sm border border-border'
                   }`}>
                     <p className="text-sm break-words">{message.text}</p>
                   </div>
                   <div className={`text-xs text-muted-foreground mt-1 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}>
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {message.timestamp.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
                 {message.sender === 'support' && (
@@ -282,9 +287,9 @@ const LiveChat: React.FC = () => {
                 </div>
                 <div className="bg-card px-4 py-2 rounded-2xl rounded-bl-md shadow-sm border max-w-xs">
                   <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-muted-foreground/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                 </div>
               </div>
@@ -296,13 +301,13 @@ const LiveChat: React.FC = () => {
           {/* Quick Replies */}
           {!hasSent && (
             <div className="p-3 bg-card border-t flex-shrink-0">
-              <p className="text-xs text-muted-foreground mb-2">Câu hỏi thường gặp:</p>
+              <p className="text-xs text-muted-foreground mb-2">{t('liveChat.faqLabel')}</p>
               <div className="flex flex-wrap gap-2">
                 {quickReplies.map((reply, index) => (
                   <button
                     key={index}
                     onClick={() => setInputMessage(reply)}
-                    className="px-3 py-1 bg-success-subtle text-primary rounded-full text-xs hover:bg-green-200 transition-colors"
+                    className="rounded-full bg-success-subtle px-3 py-1 text-xs text-primary transition-colors hover:bg-success/30"
                   >
                     {reply}
                   </button>
@@ -319,13 +324,14 @@ const LiveChat: React.FC = () => {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Nhập tin nhắn..."
+                placeholder={t('liveChat.placeholder')}
                 className="flex-1 px-3 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-primary text-sm"
               />
               <button
                 onClick={handleSendMessage}
                 disabled={!inputMessage.trim() || isTyping}
                 className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center hover:bg-primary transition-colors disabled:opacity-50"
+                aria-label={t('liveChat.send')}
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -336,7 +342,7 @@ const LiveChat: React.FC = () => {
           <div className="px-4 py-2 bg-background border-t flex-shrink-0">
             <div className="flex items-center justify-center space-x-2 text-xs text-muted-foreground">
               <Clock className="w-3 h-3" />
-              <span>Hỗ trợ 24/7</span>
+              <span>{t('liveChat.support247')}</span>
             </div>
           </div>
         </div>

@@ -9,7 +9,7 @@ import React from 'react';
  */
 const VideoHero: React.FC = () => {
   return (
-    <div className="relative bg-gradient-to-r from-blue-500 to-blue-600 mx-4 my-4 rounded-lg overflow-hidden">
+    <div className="relative bg-gradient-hero mx-4 my-4 rounded-lg overflow-hidden">
       {/* Ảnh hero */}
       <img
         src="https://pub-cdn.sider.ai/u/U0E5HLZKXNK/web-coder/68750791b1dac45b18d4a236/resource/65763967-2c9d-403e-93dc-b6d34c862be1.jpg"

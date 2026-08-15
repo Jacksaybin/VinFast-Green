@@ -7,16 +7,21 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Bell, User, ChevronDown, Menu, X, LogOut, Users, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/authStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { formatDate } from '../lib/format';
 import { LogoVGreen } from './ui/illustrations';
+import LanguageSwitcher from './ui/LanguageSwitcher';
+import { AvatarInitials } from './ui/AvatarInitials';
 
 const Header: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { user, isAuthenticated, logout } = useAuthStore();
   const { getUserNotifications, getUnreadCount, markAsRead, refresh } = useNotificationStore();
@@ -58,7 +63,7 @@ const Header: React.FC = () => {
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
               className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors"
-              aria-label="Mở menu"
+              aria-label={showMobileMenu ? t('header.closeMenu') : t('header.openMenu')}
             >
               {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -85,11 +90,21 @@ const Header: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <input
                 type="text"
-                placeholder="Tìm kiếm..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchTerm.trim()) {
+                    navigate(`/news?q=${encodeURIComponent(searchTerm.trim())}`);
+                  }
+                }}
+                placeholder={t('header.searchPlaceholder')}
                 className="w-full pl-10 pr-4 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary-500 focus:border-transparent transition-all"
               />
             </div>
           </div>
+
+          {/* Language Switcher */}
+          <LanguageSwitcher variant="compact" className="hidden sm:inline-flex" />
 
           {/* User Actions */}
           <div className="flex items-center space-x-2">
@@ -102,12 +117,12 @@ const Header: React.FC = () => {
                     setShowUserDropdown(false);
                   }}
                   className="p-2 rounded-lg hover:bg-muted transition-colors relative"
-                  aria-label="Thông báo"
+                  aria-label={t('header.notifications')}
                 >
                   <Bell className="w-5 h-5 text-muted-foreground" />
                   {unreadCount > 0 && (
                     <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-danger rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-sm">
-                      {unreadCount > 9 ? '9+' : unreadCount}
+                      {unreadCount > 9 ? t('header.unreadBadge') : unreadCount}
                     </span>
                   )}
                 </button>
@@ -121,17 +136,17 @@ const Header: React.FC = () => {
                     />
                     <div className="absolute right-0 mt-2 w-80 glass-card rounded-xl shadow-elevated z-50 max-h-96 overflow-hidden flex flex-col animate-slide-down">
                       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-                        <h3 className="font-semibold text-foreground">Thông báo</h3>
+                        <h3 className="font-semibold text-foreground">{t('header.notifications')}</h3>
                         {unreadCount > 0 && (
                           <span className="text-xs text-brand-primary-600 dark:text-brand-primary-400 font-medium">
-                            {unreadCount} chưa đọc
+                            {t('header.unreadCount', { count: unreadCount })}
                           </span>
                         )}
                       </div>
                       <div className="overflow-y-auto flex-1 max-h-72 scrollbar-thin">
                         {notifications.length === 0 ? (
                           <div className="p-6 text-center text-muted-foreground text-sm">
-                            Chưa có thông báo nào
+                            {t('header.noNotifications')}
                           </div>
                         ) : (
                           notifications.slice(0, 10).map((notif) => (
@@ -164,7 +179,7 @@ const Header: React.FC = () => {
                           }}
                           className="w-full px-4 py-3 text-sm text-brand-primary-600 dark:text-brand-primary-400 font-medium hover:bg-brand-primary-500/10 transition-colors border-t border-border"
                         >
-                          Xem tất cả thông báo
+                          {t('header.viewAllNotifications')}
                         </button>
                       )}
                     </div>
@@ -180,12 +195,10 @@ const Header: React.FC = () => {
                   setShowUserDropdown(!showUserDropdown);
                   setShowNotifDropdown(false);
                 }}
-                className="flex items-center space-x-2 p-2 rounded-lg hover:bg-muted transition-colors"
-                aria-label="Tài khoản"
+                className="flex items-center space-x-2 p-1 rounded-lg hover:bg-muted transition-colors"
+                aria-label={t('header.account')}
               >
-                <div className="w-8 h-8 bg-gradient-brand rounded-full flex items-center justify-center shadow-glow">
-                  <User className="w-4 h-4 text-white" />
-                </div>
+                <AvatarInitials name={user?.fullName} size="sm" showRing />
                 <ChevronDown className="w-4 h-4 text-muted-foreground hidden sm:block" />
               </button>
 
@@ -208,7 +221,7 @@ const Header: React.FC = () => {
                           className="w-full text-left px-4 py-2 hover:bg-muted transition-colors flex items-center space-x-2 text-foreground"
                         >
                           <User className="w-4 h-4" />
-                          <span>Tài khoản của tôi</span>
+                          <span>{t('header.myAccount')}</span>
                         </button>
                         <button
                           onClick={() => {
@@ -218,7 +231,7 @@ const Header: React.FC = () => {
                           className="w-full text-left px-4 py-2 hover:bg-muted transition-colors flex items-center space-x-2 text-foreground"
                         >
                           <Users className="w-4 h-4" />
-                          <span>Giới thiệu bạn bè</span>
+                          <span>{t('header.referFriends')}</span>
                         </button>
                         <button
                           onClick={() => {
@@ -228,7 +241,7 @@ const Header: React.FC = () => {
                           className="w-full text-left px-4 py-2 hover:bg-muted transition-colors flex items-center space-x-2 text-foreground"
                         >
                           <RefreshCw className="w-4 h-4" />
-                          <span>Tái đầu tư</span>
+                          <span>{t('header.reinvest')}</span>
                         </button>
                         <button
                           onClick={() => {
@@ -238,7 +251,7 @@ const Header: React.FC = () => {
                           className="w-full text-left px-4 py-2 hover:bg-muted transition-colors flex items-center space-x-2 text-foreground"
                         >
                           <Bell className="w-4 h-4" />
-                          <span>Thông báo</span>
+                          <span>{t('header.notifications')}</span>
                           {unreadCount > 0 && (
                             <span className="ml-auto bg-danger text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
                               {unreadCount}
@@ -251,7 +264,7 @@ const Header: React.FC = () => {
                           className="w-full text-left px-4 py-2 hover:bg-danger/10 transition-colors flex items-center space-x-2 text-danger"
                         >
                           <LogOut className="w-4 h-4" />
-                          <span>Đăng xuất</span>
+                          <span>{t('header.logout')}</span>
                         </button>
                       </>
                     ) : (
@@ -263,7 +276,7 @@ const Header: React.FC = () => {
                           }}
                           className="w-full text-left px-4 py-2 hover:bg-muted transition-colors text-foreground"
                         >
-                          Đăng nhập
+                          {t('header.login')}
                         </button>
                         <button
                           onClick={() => {
@@ -272,7 +285,7 @@ const Header: React.FC = () => {
                           }}
                           className="w-full text-left px-4 py-2 hover:bg-muted transition-colors text-foreground"
                         >
-                          Đăng ký
+                          {t('header.register')}
                         </button>
                       </>
                     )}
@@ -292,27 +305,38 @@ const Header: React.FC = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <input
                 type="text"
-                placeholder="Tìm kiếm..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchTerm.trim()) {
+                    navigate(`/news?q=${encodeURIComponent(searchTerm.trim())}`);
+                    setShowMobileMenu(false);
+                  }
+                }}
+                placeholder={t('header.searchPlaceholder')}
                 className="w-full pl-10 pr-4 py-2 bg-background border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary-500 focus:border-transparent"
               />
             </div>
           </div>
+          <div className="px-4 pb-3">
+            <LanguageSwitcher variant="compact" />
+          </div>
           <nav className="px-4 py-2 space-y-1">
-            <button onClick={() => { navigate('/'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Trang chủ</button>
-            <button onClick={() => { navigate('/investment'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Đầu tư</button>
-            <button onClick={() => { navigate('/news'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Tin tức</button>
-            <button onClick={() => { navigate('/benefits'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Phúc lợi</button>
+            <button onClick={() => { navigate('/'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">{t('header.navHome')}</button>
+            <button onClick={() => { navigate('/investment'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">{t('header.navInvestment')}</button>
+            <button onClick={() => { navigate('/news'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">{t('header.navNews')}</button>
+            <button onClick={() => { navigate('/benefits'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">{t('header.navBenefits')}</button>
             {isAuthenticated ? (
               <>
-                <button onClick={() => { navigate('/my-account'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Tài khoản</button>
-                <button onClick={() => { navigate('/wallet'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Ví</button>
-                <button onClick={() => { navigate('/referral'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Giới thiệu bạn bè</button>
-                <button onClick={() => { navigate('/reinvest'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Tái đầu tư</button>
+                <button onClick={() => { navigate('/my-account'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">{t('header.myAccount')}</button>
+                <button onClick={() => { navigate('/wallet'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">{t('header.navWallet')}</button>
+                <button onClick={() => { navigate('/referral'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">{t('header.referFriends')}</button>
+                <button onClick={() => { navigate('/reinvest'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">{t('header.reinvest')}</button>
               </>
             ) : (
               <>
-                <button onClick={() => { navigate('/login'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Đăng nhập</button>
-                <button onClick={() => { navigate('/register'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">Đăng ký</button>
+                <button onClick={() => { navigate('/login'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">{t('header.login')}</button>
+                <button onClick={() => { navigate('/register'); setShowMobileMenu(false); }} className="block w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-foreground">{t('header.register')}</button>
               </>
             )}
           </nav>
